@@ -3,6 +3,8 @@
    Premium Script v1.0
 ================================== */
 
+emailjs.init("XkkCrNFvEe1DQzBvG");
+
 // DARK MODE
 
 const darkBtn = document.getElementById("darkBtn");
@@ -61,54 +63,67 @@ document.querySelector(".hero p").innerHTML="गोमो के मुख्य
 
 // BOOKING FORM TO WHATSAPP
 
-const form=document.querySelector("form");
+const form = document.getElementById("bookingForm");
 
-form.addEventListener("submit",function(e){
+form.addEventListener("submit", function(e){
 
 e.preventDefault();
 
-const inputs=form.querySelectorAll("input,select,textarea");
 
-const name=inputs[0].value;
+const name = document.getElementById("name").value;
+const phone = document.getElementById("phone").value;
+const email = document.getElementById("email").value;
+const checkin = document.getElementById("checkin").value;
+const checkout = document.getElementById("checkout").value;
+const room = document.getElementById("room").value;
+const request = document.getElementById("request").value;
 
-const phone=inputs[1].value;
 
-const checkin=inputs[2].value;
+const message =
+"New Booking Request - Kaushalya Guest House\n\n" +
+"Name: " + name +
+"\nPhone: " + phone +
+"\nEmail: " + email +
+"\nRoom: " + room +
+"\nCheck In: " + checkin +
+"\nCheck Out: " + checkout +
+"\nSpecial Request: " + request;
 
-const checkout=inputs[3].value;
 
-const room=inputs[4].value;
-
-const request=inputs[5].value;
-
-const message=`Hello Kaushalya Guest House,
-
-I would like to book a room.
-
-Name: ${name}
-
-Phone: ${phone}
-
-Room: ${room}
-
-Check In: ${checkin}
-
-Check Out: ${checkout}
-
-Special Request:
-${request}`;
+// WhatsApp
 
 window.open(
-
-"https://wa.me/916205416451?text="+encodeURIComponent(message),
-
+"https://wa.me/916205416451?text=" +
+encodeURIComponent(message),
 "_blank"
-
 );
+
+
+// Email (after EmailJS setup)
+
+emailjs.send(
+"service_k4u106n",
+"template_gmf6drc",
+{
+customer_email: email,
+customer_name: name,
+booking_details: message
+}
+)
+.then(function(){
+
+alert("Booking request sent successfully!");
+
+})
+.catch(function(error){
+
+alert("Email sending failed. Please try again.");
+
+console.log(error);
 
 });
 
-
+});
 
 // GALLERY LIGHTBOX
 

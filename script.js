@@ -154,14 +154,12 @@ encodeURIComponent(message),
 form.reset();
 
 
-}else{
+else{
 
-alert("Booking failed. Please try again.");
-
-}
-
+alert("Booking failed: " + JSON.stringify(result));
 
 }
+
 
 catch(error){
 

@@ -200,13 +200,13 @@ const hero=document.querySelector(".hero");
 
 const heroImages=[
 
-"images/hero.jpg",
+"Outside front.jpg",
 
-"images/gallery1.jpg",
+"Reception.jpg",
 
-"images/gallery2.jpg",
+"Room3.JPG",
 
-"images/gallery3.jpg"
+"Restaurant1.JPG"
 
 ];
 

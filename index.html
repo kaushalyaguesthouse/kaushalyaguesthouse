@@ -29,9 +29,8 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <div class="logo">
 
-    <img src="Logo.png" alt="Kaushalya
+<img src="Logo.png" alt="Kaushalya Guest House Logo">
 
-Guest House Logo">
 </div>
 
 <ul>
@@ -160,7 +159,7 @@ AC Room
 
 </ul>
 
-<a href="https://wa.me/916205416451"
+<a href="https://wa.me/916205416451?text=Hello%20Kaushalya%20Guest%20House,%20I%20want%20to%20book%20a%20room."
 class="bookBtn">
 
 Book via WhatsApp
@@ -199,7 +198,7 @@ Non AC Room
 
 </ul>
 
-<a href="https://wa.me/916205416451"
+<a href="https://wa.me/916205416451?text=Hello%20Kaushalya%20Guest%20House,%20I%20want%20to%20book%20a%20Non%20AC%20Room."
 class="bookBtn">
 
 Book via WhatsApp
@@ -394,44 +393,52 @@ Book Your Stay
 
 </h2>
 
-<form>
+<form id="bookingForm">
 
-<input
+<input 
+id="name"
 type="text"
-placeholder="Your Name">
+placeholder="Your Name"
+required>
 
 <input
+id="phone"
 type="tel"
-placeholder="Phone Number">
+placeholder="Phone Number"
+required>
 
 <input
-type="date">
+id="email"
+type="email"
+placeholder="Your Email"
+required>
 
+<label>Check In</label>
 <input
-type="date">
+id="checkin"
+type="date"
+required>
 
-<select>
+<label>Check Out</label>
+<input
+id="checkout"
+type="date"
+required>
 
-<option>
+<select id="room">
 
-AC Room
+<option>AC Room</option>
 
-</option>
-
-<option>
-
-Non AC Room
-
-</option>
+<option>Non AC Room</option>
 
 </select>
 
 <textarea
+id="request"
 placeholder="Special Request">
-
 </textarea>
 
-<button>
+<button type="submit">
 
 Send Booking Request
 
@@ -494,7 +501,9 @@ href="https://wa.me/916205416451">
 
 </a>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 <script src="script.js"></script>
 
 </body>
-</html>
+</hwtml>

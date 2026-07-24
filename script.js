@@ -63,34 +63,86 @@ document.querySelector(".hero p").innerHTML="गोमो के मुख्य
 
 // BOOKING FORM TO WHATSAPP
 
+// BOOKING FORM TO BACKEND
+
 const form = document.getElementById("bookingForm");
 
-form.addEventListener("submit", function(e){
+const BACKEND_URL = "https://kaushalya-backend.onrender.com";
+
+
+form.addEventListener("submit", async function(e){
 
 e.preventDefault();
 
 
-const name = document.getElementById("name").value;
-const phone = document.getElementById("phone").value;
-const email = document.getElementById("email").value;
-const checkin = document.getElementById("checkin").value;
-const checkout = document.getElementById("checkout").value;
-const room = document.getElementById("room").value;
-const request = document.getElementById("request").value;
+const bookingData = {
 
+customer_name: document.getElementById("name").value,
+
+phone: document.getElementById("phone").value,
+
+email: document.getElementById("email").value,
+
+room_type: document.getElementById("room").value,
+
+check_in: document.getElementById("checkin").value,
+
+check_out: document.getElementById("checkout").value,
+
+adults: 1,
+
+children: 0,
+
+payment_type: "Pay Later",
+
+amount: document.getElementById("room").value === "AC Room" ? 1500 : 1200,
+
+special_request: document.getElementById("request").value
+
+};
+
+
+try {
+
+
+const response = await fetch(
+BACKEND_URL + "/create-booking",
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify(bookingData)
+
+});
+
+
+const result = await response.json();
+
+
+if(result.success){
+
+
+alert(
+"Booking Created Successfully!\n\nBooking ID: "
++
+result.booking_id
+);
+
+
+// WhatsApp notification
 
 const message =
-"New Booking Request - Kaushalya Guest House\n\n" +
-"Name: " + name +
-"\nPhone: " + phone +
-"\nEmail: " + email +
-"\nRoom: " + room +
-"\nCheck In: " + checkin +
-"\nCheck Out: " + checkout +
-"\nSpecial Request: " + request;
+"New Booking - Kaushalya Guest House\n\n" +
+"Booking ID: " + result.booking_id +
+"\nName: " + bookingData.customer_name +
+"\nRoom: " + bookingData.room_type +
+"\nCheck In: " + bookingData.check_in +
+"\nCheck Out: " + bookingData.check_out;
 
-
-// WhatsApp
 
 window.open(
 "https://wa.me/916205416451?text=" +
@@ -99,27 +151,26 @@ encodeURIComponent(message),
 );
 
 
-// Email (after EmailJS setup)
+form.reset();
 
-emailjs.send(
-"service_k4u106n",
-"template_gmf6drc",
-{
-customer_email: email,
-customer_name: name,
-booking_details: message
+
+}else{
+
+alert("Booking failed. Please try again.");
+
 }
-)
-.then(function(){
 
-alert("Booking request sent successfully!");
 
-})
-.catch(function(error){
+}
 
-alert("Email sending failed. Please try again.");
+catch(error){
 
 console.log(error);
+
+alert("Server error. Please try again later.");
+
+}
+
 
 });
 

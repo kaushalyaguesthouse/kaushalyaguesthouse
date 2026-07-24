@@ -174,8 +174,6 @@ alert("Server error. Please try again later.");
 
 });
 
-});
-
 // GALLERY LIGHTBOX
 
 const images=document.querySelectorAll(".gallery img");

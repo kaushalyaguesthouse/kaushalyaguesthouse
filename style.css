@@ -145,7 +145,7 @@ color:white;
 
 height:100vh;
 
-background:url("images/hero.jpg");
+background:url("Outside front.jpg");
 
 background-size:cover;
 
@@ -608,56 +608,44 @@ z-index:999;
 @media(max-width:768px){
 
 nav{
-
 padding:0 20px;
-
 }
 
 nav ul{
-
 display:none;
-
 }
 
 .hero h1{
-
 font-size:42px;
-
 }
 
 .hero p{
-
 font-size:18px;
-
 }
 
 .heroButtons{
-
 flex-direction:column;
-
 width:100%;
-
 }
 
 .btnPrimary,
 .btnOutline{
-
 width:100%;
-
 text-align:center;
-
 }
 
 section{
-
 padding:70px 20px;
-
 }
 
 section h2{
-
 font-size:34px;
+}
 
 }
 
+.logo img{
+height:55px;
+width:auto;
+display:block;
 }

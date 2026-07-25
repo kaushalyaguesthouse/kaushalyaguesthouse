@@ -10,20 +10,15 @@
 
 <meta name="description" content="Kaushalya Guest House - Premium Stay in Gomoh Main Market. AC & Non AC Rooms, Restaurant, Free WiFi, Parking.">
 
-
 <link rel="stylesheet" href="style.css">
-
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
 
 </head>
 
@@ -68,10 +63,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 </div>
 
-
 </nav>
 
 </header>
+
 
 
 
@@ -89,6 +84,7 @@ Kaushalya Guest House
 <p>
 Comfortable Stay in the Heart of Gomoh
 </p>
+
 
 
 <div class="heroButtons">
@@ -115,6 +111,7 @@ Call Now
 
 
 
+
 <section class="about">
 
 
@@ -124,7 +121,6 @@ Welcome
 
 
 <p>
-
 Located in Gomoh Main Market,
 Kaushalya Guest House offers clean rooms,
 comfortable beds,
@@ -133,7 +129,6 @@ restaurant,
 parking,
 free WiFi
 and easy access to Gomoh Railway Station.
-
 </p>
 
 
@@ -149,7 +144,6 @@ and easy access to Gomoh Railway Station.
 <h2>
 Our Rooms
 </h2>
-
 
 
 <div class="roomGrid">
@@ -253,9 +247,7 @@ Restaurant
 
 
 <p>
-
 Enjoy delicious food in our family restaurant located on the ground floor.
-
 </p>
 
 
@@ -296,8 +288,8 @@ Why Choose Us
 <div>🪪<h3>Valid ID Required</h3></div>
 
 
-
 </div>
+
 
 </section>
 
@@ -385,13 +377,16 @@ Book Your Stay
 </h2>
 
 
+
 <form id="bookingForm">
+
 
 <input 
 id="name"
 type="text"
 placeholder="Your Name"
 required>
+
 
 
 <input
@@ -401,6 +396,7 @@ placeholder="Phone Number"
 required>
 
 
+
 <input
 id="email"
 type="email"
@@ -408,9 +404,11 @@ placeholder="Your Email"
 required>
 
 
+
 <label>
 Check In
 </label>
+
 
 <input
 id="checkin"
@@ -418,9 +416,11 @@ type="date"
 required>
 
 
+
 <label>
 Check Out
 </label>
+
 
 <input
 id="checkout"
@@ -428,17 +428,24 @@ type="date"
 required>
 
 
+
+
 <select id="room">
+
 
 <option value="AC Room">
 AC Room - ₹1500/night
 </option>
 
+
 <option value="Non AC Room">
 Non AC Room - ₹1200/night
 </option>
 
+
 </select>
+
+
 
 
 <textarea
@@ -447,9 +454,13 @@ placeholder="Special Request">
 </textarea>
 
 
+
+
 <h3>
 Choose Payment Method
 </h3>
+
+
 
 
 <label class="paymentOption">
@@ -465,6 +476,8 @@ Pay Advance Online (30%)
 </label>
 
 
+
+
 <label class="paymentOption">
 
 <input 
@@ -477,6 +490,8 @@ Pay Later at Hotel
 </label>
 
 
+
+
 <div id="advanceAmount">
 
 Advance Amount: ₹450 (AC Room) / ₹360 (Non AC Room)
@@ -484,11 +499,17 @@ Advance Amount: ₹450 (AC Room) / ₹360 (Non AC Room)
 </div>
 
 
-<button type="submit">
+
+<input type="hidden" id="paymentStatus" value="Pending">
+
+
+
+<button type="submit" id="bookingBtn">
 
 Confirm Booking
 
 </button>
+
 
 
 </form>
@@ -501,8 +522,6 @@ Confirm Booking
 
 
 
-<!-- CANCELLATION POLICY -->
-
 
 <section class="policy" id="policy">
 
@@ -512,7 +531,9 @@ Cancellation Policy
 </h2>
 
 
+
 <ul>
+
 
 <li>
 If payment is completed but rooms are unavailable due to hotel-side issue, full refund will be provided.
@@ -550,9 +571,6 @@ Refund processing time depends on the payment gateway.
 
 
 
-<!-- LONG STAY OFFER -->
-
-
 <section class="offer" id="offer">
 
 
@@ -561,12 +579,14 @@ Special Long Stay Offer
 </h2>
 
 
+
 <p>
 
 If any customer stays up to 6 days continuously,
 their next upcoming 1 day stay will be free.
 
 </p>
+
 
 
 <p>
@@ -578,6 +598,7 @@ normal room charges will be applicable.
 
 
 </section>
+
 
 
 
@@ -620,6 +641,10 @@ Open Google Maps
 
 
 
+
+
+
+
 <footer>
 
 
@@ -647,7 +672,6 @@ href="tel:+916205416451">
 
 
 
-
 <a class="floatingWhatsapp"
 href="https://wa.me/916205416451">
 
@@ -657,6 +681,11 @@ href="https://wa.me/916205416451">
 
 
 
+
+
+
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>

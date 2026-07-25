@@ -1,6 +1,6 @@
 /* ===========================================
    KAUSHALYA GUEST HOUSE
-   SCRIPT v7
+   SCRIPT v8 - FIXED
 =========================================== */
 
 // ============================
@@ -11,85 +11,91 @@ if (typeof emailjs !== "undefined") {
     emailjs.init("XkkCrNFvEe1DQzBvG");
 }
 
-
-
-const BACKEND_URL = "https://kaushalya-backend.onrender.com";
+// ============================
+// BACKEND URL
 // ============================
 
-const darkBtn = document.getElementById("darkBtn");
+const BACKEND_URL =
+    "https://kaushalya-backend.onrender.com";
+
+// ============================
+// DARK MODE
+// ============================
+
+const darkBtn =
+    document.getElementById("darkBtn");
 
 if (darkBtn) {
-
     darkBtn.addEventListener("click", () => {
-
         document.body.classList.toggle("dark");
 
         darkBtn.innerHTML =
             document.body.classList.contains("dark")
-            ? "☀️"
-            : "🌙";
-
+                ? "☀️"
+                : "🌙";
     });
-
 }
 
 // ============================
 // LANGUAGE BUTTON
 // ============================
 
-const langBtn = document.getElementById("langBtn");
+const langBtn =
+    document.getElementById("langBtn");
 
 let english = true;
 
 if (langBtn) {
-
     langBtn.addEventListener("click", () => {
-
         english = !english;
 
-        if (english) {
+        const heroTitle =
+            document.querySelector(".hero h1");
 
+        const heroText =
+            document.querySelector(".hero p");
+
+        if (english) {
             langBtn.innerHTML = "हिन्दी";
 
-            document.querySelector(".hero h1").innerHTML =
-                "Kaushalya Guest House";
+            if (heroTitle) {
+                heroTitle.innerHTML =
+                    "Kaushalya Guest House";
+            }
 
-            document.querySelector(".hero p").innerHTML =
-                "Comfortable Stay in the Heart of Gomoh";
-
-        }
-
-        else {
-
+            if (heroText) {
+                heroText.innerHTML =
+                    "Comfortable Stay in the Heart of Gomoh";
+            }
+        } else {
             langBtn.innerHTML = "English";
 
-            document.querySelector(".hero h1").innerHTML =
-                "कौशल्या गेस्ट हाउस";
+            if (heroTitle) {
+                heroTitle.innerHTML =
+                    "कौशल्या गेस्ट हाउस";
+            }
 
-            document.querySelector(".hero p").innerHTML =
-                "गोमो के मुख्य बाजार में आरामदायक ठहराव";
-
+            if (heroText) {
+                heroText.innerHTML =
+                    "गोमो के मुख्य बाजार में आरामदायक ठहराव";
+            }
         }
-
     });
-
 }
 
 // ============================
 // HERO IMAGE SLIDER
 // ============================
 
-const hero = document.querySelector(".hero");
+const hero =
+    document.querySelector(".hero");
 
 if (hero) {
-
     const heroImages = [
-
         "Outside front.jpg",
         "Reception.jpg",
         "Room3.JPG",
         "Restaurant1.JPG"
-
     ];
 
     let heroIndex = 0;
@@ -98,20 +104,13 @@ if (hero) {
         `url('${heroImages[0]}')`;
 
     setInterval(() => {
-
-        heroIndex++;
-
-        if (heroIndex >= heroImages.length) {
-
-            heroIndex = 0;
-
-        }
+        heroIndex =
+            (heroIndex + 1) %
+            heroImages.length;
 
         hero.style.backgroundImage =
             `url('${heroImages[heroIndex]}')`;
-
     }, 5000);
-
 }
 
 // ============================
@@ -119,361 +118,457 @@ if (hero) {
 // ============================
 
 const galleryImages =
-document.querySelectorAll(".gallery img");
+    document.querySelectorAll(".gallery img");
 
-const lightbox =
-document.createElement("div");
+if (galleryImages.length > 0) {
+    const lightbox =
+        document.createElement("div");
 
-lightbox.style.cssText = `
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.92);
-display:none;
-justify-content:center;
-align-items:center;
-z-index:999999;
-cursor:pointer;
-`;
+    lightbox.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,.92);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 999999;
+        cursor: pointer;
+    `;
 
-lightbox.innerHTML = `
-<img
-style="
-max-width:92%;
-max-height:92%;
-border-radius:16px;
-box-shadow:0 15px 45px rgba(0,0,0,.4);
-">
-`;
+    lightbox.innerHTML = `
+        <img
+            alt="Gallery preview"
+            style="
+                max-width: 92%;
+                max-height: 92%;
+                border-radius: 16px;
+                box-shadow:
+                    0 15px 45px
+                    rgba(0,0,0,.4);
+            "
+        >
+    `;
 
-document.body.appendChild(lightbox);
+    document.body.appendChild(lightbox);
 
-const lightImage =
-lightbox.querySelector("img");
+    const lightImage =
+        lightbox.querySelector("img");
 
-galleryImages.forEach(img=>{
+    galleryImages.forEach((img) => {
+        img.addEventListener("click", () => {
+            if (!lightImage) {
+                return;
+            }
 
-img.addEventListener("click",()=>{
+            lightImage.src = img.src;
+            lightbox.style.display = "flex";
+        });
+    });
 
-lightbox.style.display="flex";
-
-lightImage.src=img.src;
-
-});
-
-});
-
-lightbox.onclick=()=>{
-
-lightbox.style.display="none";
-
-};
+    lightbox.addEventListener("click", () => {
+        lightbox.style.display = "none";
+    });
+}
 
 // ============================
 // DATE VALIDATION
 // ============================
 
 const checkin =
-document.getElementById("checkin");
+    document.getElementById("checkin");
 
 const checkout =
-document.getElementById("checkout");
+    document.getElementById("checkout");
 
-if(checkin && checkout){
+if (checkin && checkout) {
+    const today =
+        new Date()
+            .toISOString()
+            .split("T")[0];
 
-const today =
-new Date().toISOString().split("T")[0];
+    checkin.min = today;
 
-checkin.min=today;
+    checkin.addEventListener("change", () => {
+        checkout.min = checkin.value;
 
-checkin.addEventListener("change",()=>{
-
-checkout.min=checkin.value;
-
-});
-
+        if (
+            checkout.value &&
+            checkout.value < checkin.value
+        ) {
+            checkout.value = "";
+        }
+    });
 }
 
 // ============================
 // BOOKING FORM
 // ============================
 
-const form = document.getElementById("bookingForm");
-const bookingBtn = document.getElementById("bookingBtn");
+const form =
+    document.getElementById("bookingForm");
 
-if (form) {
+const bookingBtn =
+    document.getElementById("bookingBtn");
 
-form.addEventListener("submit", async function (e) {
+if (form && bookingBtn) {
+    form.addEventListener(
+        "submit",
+        async function (event) {
+            event.preventDefault();
 
-e.preventDefault();
+            bookingBtn.disabled = true;
+            bookingBtn.innerHTML =
+                "Please Wait...";
 
-bookingBtn.disabled = true;
-bookingBtn.innerHTML = "Please Wait...";
+            try {
+                const roomElement =
+                    document.getElementById("room");
 
-try {
+                const paymentElement =
+                    document.querySelector(
+                        'input[name="payment_method"]:checked'
+                    );
 
-const room = document.getElementById("room").value;
+                if (!roomElement) {
+                    throw new Error(
+                        "Room selection is unavailable."
+                    );
+                }
 
-const roomPrice =
-room === "AC Room"
-? 1500
-: 1200;
+                if (!paymentElement) {
+                    throw new Error(
+                        "Please select a payment method."
+                    );
+                }
 
-const paymentMethod =
-document.querySelector(
-'input[name="payment_method"]:checked'
-).value;
+                const room =
+                    roomElement.value;
 
-const bookingData = {
+                const roomPrice =
+                    room === "AC Room"
+                        ? 1500
+                        : 1200;
 
-customer_name:
-document.getElementById("name").value.trim(),
+                const paymentMethod =
+                    paymentElement.value;
 
-phone:
-document.getElementById("phone").value.trim(),
+                const bookingData = {
+                    customer_name:
+                        document
+                            .getElementById("name")
+                            ?.value.trim() || "",
 
-email:
-document.getElementById("email").value.trim(),
+                    phone:
+                        document
+                            .getElementById("phone")
+                            ?.value.trim() || "",
 
-room_type:
-room,
+                    email:
+                        document
+                            .getElementById("email")
+                            ?.value.trim() || "",
 
-check_in:
-document.getElementById("checkin").value,
+                    room_type: room,
 
-check_out:
-document.getElementById("checkout").value,
+                    check_in:
+                        document
+                            .getElementById("checkin")
+                            ?.value || "",
 
-adults:
-parseInt(document.getElementById("adults").value) || 1,
+                    check_out:
+                        document
+                            .getElementById("checkout")
+                            ?.value || "",
 
-children:
-parseInt(document.getElementById("children").value) || 0,
+                    adults:
+                        parseInt(
+                            document
+                                .getElementById("adults")
+                                ?.value,
+                            10
+                        ) || 1,
 
-amount:
-roomPrice,
+                    children:
+                        parseInt(
+                            document
+                                .getElementById("children")
+                                ?.value,
+                            10
+                        ) || 0,
 
-payment_type:
-paymentMethod === "advance"
-? "Advance Payment"
-: "Pay Later",
+                    amount: roomPrice,
 
-payment_status:"Pending",
+                    payment_type:
+                        paymentMethod === "advance"
+                            ? "Advance Payment"
+                            : "Pay Later",
 
-razorpay_payment_id:null,
+                    payment_status:
+                        "Pending",
 
-special_request:
-document.getElementById("request").value
+                    razorpay_payment_id:
+                        null,
 
-};
+                    special_request:
+                        document
+                            .getElementById("request")
+                            ?.value.trim() || ""
+                };
 
-// ============================
-// PAY LATER
-// ============================
+                // PAY LATER
 
-if(paymentMethod==="later"){
+                if (paymentMethod === "later") {
+                    await createBooking(
+                        bookingData
+                    );
 
-await createBooking(bookingData);
+                    return;
+                }
 
-bookingBtn.disabled=false;
-bookingBtn.innerHTML="Confirm Booking";
+                // CREATE RAZORPAY ORDER
 
-return;
+                const orderResponse =
+                    await fetch(
+                        `${BACKEND_URL}/create-order`,
+                        {
+                            method: "POST",
 
-}
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
 
-// ============================
-// CREATE RAZORPAY ORDER
-// ============================
+                            body: JSON.stringify({
+                                amount:
+                                    roomPrice * 0.30
+                            })
+                        }
+                    );
 
-const orderResponse =
-await fetch(
-BACKEND_URL + "/create-order",
-{
+                const order =
+                    await orderResponse.json();
 
-method:"POST",
+                if (
+                    !orderResponse.ok ||
+                    !order.success
+                ) {
+                    throw new Error(
+                        order.message ||
+                        "Unable to create order."
+                    );
+                }
 
-headers:{
-"Content-Type":"application/json"
-},
+                if (
+                    typeof Razorpay ===
+                    "undefined"
+                ) {
+                    throw new Error(
+                        "Payment service is currently unavailable."
+                    );
+                }
 
-body:JSON.stringify({
+                const options = {
+                    key:
+                        order.key_id,
 
-amount: roomPrice * 0.30
+                    amount:
+                        order.amount,
 
-})
+                    currency:
+                        "INR",
 
-}
+                    order_id:
+                        order.order_id,
 
-);
+                    name:
+                        "Kaushalya Guest House",
 
-const order = await orderResponse.json();
+                    description:
+                        "Advance Booking",
 
-if (!orderResponse.ok || !order.success) {
-    throw new Error(
-        order.message || "Unable to create order"
+                    handler:
+                        async function (
+                            response
+                        ) {
+                            try {
+                                bookingData
+                                    .payment_status =
+                                    "Paid";
+
+                                bookingData
+                                    .razorpay_payment_id =
+                                    response
+                                        .razorpay_payment_id;
+
+                                await createBooking(
+                                    bookingData
+                                );
+                            } catch (error) {
+                                console.error(
+                                    error
+                                );
+
+                                alert(
+                                    error.message ||
+                                    "Booking failed after payment."
+                                );
+
+                                bookingBtn.disabled =
+                                    false;
+
+                                bookingBtn.innerHTML =
+                                    "Confirm Booking";
+                            }
+                        },
+
+                    prefill: {
+                        name:
+                            bookingData
+                                .customer_name,
+
+                        email:
+                            bookingData
+                                .email,
+
+                        contact:
+                            bookingData
+                                .phone
+                    },
+
+                    theme: {
+                        color:
+                            "#0B2545"
+                    }
+                };
+
+                const razor =
+                    new Razorpay(options);
+
+                razor.on(
+                    "payment.failed",
+                    function () {
+                        alert(
+                            "Payment Failed"
+                        );
+
+                        bookingBtn.disabled =
+                            false;
+
+                        bookingBtn.innerHTML =
+                            "Confirm Booking";
+                    }
+                );
+
+                razor.open();
+            } catch (error) {
+                console.error(error);
+
+                alert(
+                    error.message ||
+                    "Something went wrong."
+                );
+
+                bookingBtn.disabled =
+                    false;
+
+                bookingBtn.innerHTML =
+                    "Confirm Booking";
+            }
+        }
     );
-}
-
-const options={
-
-key: order.key_id,
-
-amount:order.amount,
-
-currency:"INR",
-
-order_id:order.order_id,
-
-name:"Kaushalya Guest House",
-
-description:"Advance Booking",
-
-handler:async function(response){
-
-bookingData.payment_status="Paid";
-
-bookingData.razorpay_payment_id=
-response.razorpay_payment_id;
-
-await createBooking(bookingData);
-
-},
-
-prefill:{
-
-name:bookingData.customer_name,
-
-email:bookingData.email,
-
-contact:bookingData.phone
-
-},
-
-theme:{
-
-color:"#0B2545"
-
-}
-
-};
-
-const razor=new Razorpay(options);
-
-razor.on("payment.failed",function(){
-
-alert("Payment Failed");
-
-bookingBtn.disabled=false;
-bookingBtn.innerHTML="Confirm Booking";
-
-});
-
-razor.open();
-
-}
-
-catch(error){
-
-console.error(error);
-
-alert(error.message);
-
-bookingBtn.disabled=false;
-bookingBtn.innerHTML="Confirm Booking";
-
-}
-
-});
-
 }
 
 // ============================
 // CREATE BOOKING
 // ============================
 
-async function createBooking(data){
+async function createBooking(data) {
+    try {
+        const response =
+            await fetch(
+                `${BACKEND_URL}/create-booking`,
+                {
+                    method: "POST",
 
-try{
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-const response = await fetch(
+                    body:
+                        JSON.stringify(data)
+                }
+            );
 
-BACKEND_URL + "/create-booking",
+        const result =
+            await response.json();
 
-{
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+            throw new Error(
+                result.message ||
+                "Booking Failed"
+            );
+        }
 
-method:"POST",
+        // EMAIL CONFIRMATION
 
-headers:{
-"Content-Type":"application/json"
-},
+        const emailParams = {
+            customer_name:
+                data.customer_name,
 
-body:JSON.stringify(data)
+            customer_email:
+                data.email,
 
-}
+            booking_id:
+                result.booking_id,
 
-);
+            room_type:
+                data.room_type,
 
-const result = await response.json();
+            check_in:
+                data.check_in,
 
-if(!result.success){
+            check_out:
+                data.check_out,
 
-throw new Error(result.message || "Booking Failed");
+            payment_type:
+                data.payment_type,
 
-}
+            amount:
+                data.amount
+        };
 
-// ============================
-// EMAIL CONFIRMATION
-// ============================
+        if (
+            typeof emailjs !==
+            "undefined"
+        ) {
+            try {
+                await emailjs.send(
+                    "service_k4u106n",
+                    "template_gmf6drc",
+                    emailParams
+                );
 
-const emailParams={
+                console.log(
+                    "Email Sent"
+                );
+            } catch (emailError) {
+                console.error(
+                    "Email Error:",
+                    emailError
+                );
+            }
+        }
 
-customer_name:data.customer_name,
+        // WHATSAPP MESSAGE
 
-customer_email:data.email,
-
-booking_id:result.booking_id,
-
-room_type:data.room_type,
-
-check_in:data.check_in,
-
-check_out:data.check_out,
-
-payment_type:data.payment_type,
-
-amount:data.amount
-
-};
-
-try{
-
-await emailjs.send(
-
-"service_k4u106n",
-
-"template_gmf6drc",
-
-emailParams
-
-);
-
-console.log("Email Sent");
-
-}catch(emailError){
-
-console.log("Email Error:",emailError);
-
-}
-
-// ============================
-// WHATSAPP
-// ============================
-
-const message =
-
+        const message =
 `🏨 Kaushalya Guest House
 
 Booking ID : ${result.booking_id}
@@ -501,11 +596,9 @@ Status : ${data.payment_status}
 Amount : ₹${data.amount}
 
 Special Request :
-${data.special_request || "None"}
-`;
+${data.special_request || "None"}`;
 
-alert(
-
+        alert(
 `Booking Confirmed!
 
 Booking ID:
@@ -513,286 +606,371 @@ ${result.booking_id}
 
 Thank you for choosing
 Kaushalya Guest House.`
+        );
 
-);
+        if (form) {
+            form.reset();
+        }
 
-const whatsappURL =
-"https://wa.me/916205416451?text=" +
-encodeURIComponent(message);
+        if (bookingBtn) {
+            bookingBtn.disabled =
+                false;
 
-// Redirect to WhatsApp
-window.location.href = whatsappURL;
+            bookingBtn.innerHTML =
+                "Confirm Booking";
+        }
 
-form.reset();
+        const whatsappURL =
+            "https://wa.me/916205416451?text=" +
+            encodeURIComponent(message);
 
-bookingBtn.disabled = false;
+        window.location.href =
+            whatsappURL;
+    } catch (error) {
+        console.error(error);
 
-bookingBtn.innerHTML = "Confirm Booking";
+        if (bookingBtn) {
+            bookingBtn.disabled =
+                false;
 
+            bookingBtn.innerHTML =
+                "Confirm Booking";
+        }
+
+        throw error;
+    }
 }
 
-catch(error){
-
-console.error(error);
-
-alert(error.message || "Server Error");
-
-bookingBtn.disabled=false;
-
-bookingBtn.innerHTML="Confirm Booking";
-
-}
-
-}
 // ============================
 // GUEST REVIEW SYSTEM
 // ============================
 
 const reviewForm =
-document.getElementById("reviewForm");
+    document.getElementById(
+        "reviewForm"
+    );
 
 const reviewName =
-document.getElementById("reviewName");
+    document.getElementById(
+        "reviewName"
+    );
 
 const reviewEmail =
-document.getElementById("reviewEmail");
+    document.getElementById(
+        "reviewEmail"
+    );
 
 const reviewRating =
-document.getElementById("reviewRating");
+    document.getElementById(
+        "reviewRating"
+    );
 
 const reviewText =
-document.getElementById("reviewText");
+    document.getElementById(
+        "reviewText"
+    );
 
 const reviewSubmitBtn =
-document.getElementById("reviewSubmitBtn");
+    document.getElementById(
+        "reviewSubmitBtn"
+    );
 
 const reviewFormMessage =
-document.getElementById("reviewFormMessage");
+    document.getElementById(
+        "reviewFormMessage"
+    );
 
 const ratingMessage =
-document.getElementById("ratingMessage");
+    document.getElementById(
+        "ratingMessage"
+    );
 
 const ratingStars =
-document.querySelectorAll(".rating-star");
+    document.querySelectorAll(
+        ".rating-star"
+    );
 
 const reviewCharacterCount =
-document.getElementById("reviewCharacterCount");
+    document.getElementById(
+        "reviewCharacterCount"
+    );
 
 const reviewsContainer =
-document.getElementById("reviewsContainer");
+    document.getElementById(
+        "reviewsContainer"
+    );
 
 const averageRating =
-document.getElementById("averageRating");
+    document.getElementById(
+        "averageRating"
+    );
 
 const averageStars =
-document.getElementById("averageStars");
+    document.getElementById(
+        "averageStars"
+    );
 
 const reviewCount =
-document.getElementById("reviewCount");
+    document.getElementById(
+        "reviewCount"
+    );
 
 // ============================
 // SELECT STAR RATING
 // ============================
 
-if (ratingStars.length > 0) {
+if (
+    ratingStars.length > 0 &&
+    reviewRating
+) {
+    ratingStars.forEach((star) => {
+        star.addEventListener(
+            "click",
+            () => {
+                const selectedRating =
+                    Number(
+                        star.dataset.rating
+                    );
 
-ratingStars.forEach(star => {
+                reviewRating.value =
+                    String(
+                        selectedRating
+                    );
 
-star.addEventListener("click", () => {
+                ratingStars.forEach(
+                    (currentStar) => {
+                        const currentRating =
+                            Number(
+                                currentStar
+                                    .dataset.rating
+                            );
 
-const selectedRating =
-Number(star.dataset.rating);
+                        const isSelected =
+                            currentRating <=
+                            selectedRating;
 
-reviewRating.value =
-String(selectedRating);
+                        currentStar
+                            .classList
+                            .toggle(
+                                "active",
+                                isSelected
+                            );
 
-ratingStars.forEach(currentStar => {
+                        currentStar
+                            .classList
+                            .toggle(
+                                "selected",
+                                isSelected
+                            );
 
-const currentRating =
-Number(currentStar.dataset.rating);
+                        currentStar
+                            .setAttribute(
+                                "aria-checked",
+                                String(
+                                    isSelected
+                                )
+                            );
+                    }
+                );
 
-const isSelected =
-currentRating <= selectedRating;
-
-currentStar.classList.toggle(
-"active",
-isSelected
-);
-
-currentStar.classList.toggle(
-"selected",
-isSelected
-);
-
-});
-
-if (ratingMessage) {
-
-ratingMessage.textContent =
-`${selectedRating} star${
-selectedRating === 1 ? "" : "s"
-} selected`;
-
-}
-
-});
-
-});
-
+                if (ratingMessage) {
+                    ratingMessage
+                        .textContent =
+                        `${selectedRating} star${
+                            selectedRating === 1
+                                ? ""
+                                : "s"
+                        } selected`;
+                }
+            }
+        );
+    });
 }
 
 // ============================
 // REVIEW CHARACTER COUNT
 // ============================
 
-if (reviewText && reviewCharacterCount) {
-
-reviewText.addEventListener("input", () => {
-
-reviewCharacterCount.textContent =
-String(reviewText.value.length);
-
-});
-
+if (
+    reviewText &&
+    reviewCharacterCount
+) {
+    reviewText.addEventListener(
+        "input",
+        () => {
+            reviewCharacterCount
+                .textContent =
+                String(
+                    reviewText
+                        .value
+                        .length
+                );
+        }
+    );
 }
 
 // ============================
 // SUBMIT GUEST REVIEW
 // ============================
 
-if (reviewForm) {
-
-reviewForm.addEventListener(
-"submit",
-async function (event) {
-
-event.preventDefault();
-
-const selectedRating =
-Number(reviewRating.value);
-
 if (
-!Number.isInteger(selectedRating) ||
-selectedRating < 1 ||
-selectedRating > 5
+    reviewForm &&
+    reviewName &&
+    reviewEmail &&
+    reviewRating &&
+    reviewText &&
+    reviewSubmitBtn &&
+    reviewFormMessage
 ) {
+    reviewForm.addEventListener(
+        "submit",
+        async function (event) {
+            event.preventDefault();
 
-reviewFormMessage.textContent =
-"Please select a star rating.";
+            const selectedRating =
+                Number(
+                    reviewRating.value
+                );
 
-reviewFormMessage.style.color =
-"#c0392b";
+            if (
+                !Number.isInteger(
+                    selectedRating
+                ) ||
+                selectedRating < 1 ||
+                selectedRating > 5
+            ) {
+                reviewFormMessage
+                    .textContent =
+                    "Please select a star rating.";
 
-return;
+                reviewFormMessage
+                    .style.color =
+                    "#c0392b";
 
-}
+                return;
+            }
 
-reviewSubmitBtn.disabled = true;
+            reviewSubmitBtn.disabled =
+                true;
 
-reviewSubmitBtn.textContent =
-"Submitting Review...";
+            reviewSubmitBtn.textContent =
+                "Submitting Review...";
 
-reviewFormMessage.textContent = "";
+            reviewFormMessage.textContent =
+                "";
 
-try {
+            try {
+                const response =
+                    await fetch(
+                        `${BACKEND_URL}/create-review`,
+                        {
+                            method:
+                                "POST",
 
-const response = await fetch(
-BACKEND_URL + "/create-review",
-{
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
 
-method: "POST",
+                            body:
+                                JSON.stringify({
+                                    customer_name:
+                                        reviewName
+                                            .value
+                                            .trim(),
 
-headers: {
-"Content-Type": "application/json"
-},
+                                    customer_email:
+                                        reviewEmail
+                                            .value
+                                            .trim(),
 
-body: JSON.stringify({
+                                    rating:
+                                        selectedRating,
 
-customer_name:
-reviewName.value.trim(),
+                                    review:
+                                        reviewText
+                                            .value
+                                            .trim()
+                                })
+                        }
+                    );
 
-customer_email:
-reviewEmail.value.trim(),
+                const result =
+                    await response.json();
 
-rating:
-selectedRating,
+                if (
+                    !response.ok ||
+                    !result.success
+                ) {
+                    throw new Error(
+                        result.message ||
+                        "Unable to submit your review."
+                    );
+                }
 
-review:
-reviewText.value.trim()
+                reviewFormMessage
+                    .textContent =
+                    "Thank you! Your review has been submitted and will appear after approval.";
 
-})
+                reviewFormMessage
+                    .style.color =
+                    "#188038";
 
-}
-);
+                reviewForm.reset();
 
-const result = await response.json();
+                reviewRating.value =
+                    "";
 
-if (!response.ok || !result.success) {
+                ratingStars.forEach(
+                    (star) => {
+                        star.classList.remove(
+                            "active",
+                            "selected"
+                        );
 
-throw new Error(
-result.message ||
-"Unable to submit your review."
-);
+                        star.setAttribute(
+                            "aria-checked",
+                            "false"
+                        );
+                    }
+                );
 
-}
+                if (ratingMessage) {
+                    ratingMessage
+                        .textContent =
+                        "Tap a star to select your rating.";
+                }
 
-reviewFormMessage.textContent =
-"Thank you! Your review has been submitted and will appear after approval.";
+                if (
+                    reviewCharacterCount
+                ) {
+                    reviewCharacterCount
+                        .textContent =
+                        "0";
+                }
+            } catch (error) {
+                console.error(
+                    "REVIEW SUBMISSION ERROR:",
+                    error
+                );
 
-reviewFormMessage.style.color =
-"#188038";
+                reviewFormMessage
+                    .textContent =
+                    error.message ||
+                    "Unable to submit your review.";
 
-reviewForm.reset();
+                reviewFormMessage
+                    .style.color =
+                    "#c0392b";
+            } finally {
+                reviewSubmitBtn.disabled =
+                    false;
 
-reviewRating.value = "";
-
-ratingStars.forEach(star => {
-
-star.classList.remove("active");
-
-});
-
-if (ratingMessage) {
-
-ratingMessage.textContent =
-"Tap a star to select your rating.";
-
-}
-
-if (reviewCharacterCount) {
-
-reviewCharacterCount.textContent = "0";
-
-}
-
-}
-catch (error) {
-
-console.error(
-"REVIEW SUBMISSION ERROR:",
-error
-);
-
-reviewFormMessage.textContent =
-error.message ||
-"Unable to submit your review.";
-
-reviewFormMessage.style.color =
-"#c0392b";
-
-}
-finally {
-
-reviewSubmitBtn.disabled = false;
-
-reviewSubmitBtn.textContent =
-"Submit Review";
-
-}
-
-}
-);
-
+                reviewSubmitBtn.textContent =
+                    "Submit Review";
+            }
+        }
+    );
 }
 
 // ============================
@@ -800,159 +978,259 @@ reviewSubmitBtn.textContent =
 // ============================
 
 function createReviewCard(review) {
+    const card =
+        document.createElement(
+            "article"
+        );
 
-const card =
-document.createElement("article");
+    card.className =
+        "review-card";
 
-card.className = "review-card";
+    const numericRating =
+        Math.max(
+            0,
+            Math.min(
+                5,
+                Number(
+                    review.rating
+                ) || 0
+            )
+        );
 
-const stars =
-document.createElement("div");
+    const stars =
+        document.createElement(
+            "div"
+        );
 
-stars.className =
-"review-card-stars";
+    stars.className =
+        "review-card-stars";
 
-stars.textContent =
-"★".repeat(review.rating) +
-"☆".repeat(5 - review.rating);
+    stars.textContent =
+        "★".repeat(
+            numericRating
+        ) +
+        "☆".repeat(
+            5 - numericRating
+        );
 
-const reviewContent =
-document.createElement("p");
+    const reviewContent =
+        document.createElement(
+            "p"
+        );
 
-reviewContent.className =
-"review-card-text";
+    reviewContent.className =
+        "review-card-text";
 
-reviewContent.textContent =
-review.review;
+    reviewContent.textContent =
+        review.review || "";
 
-const footer =
-document.createElement("div");
+    const footer =
+        document.createElement(
+            "div"
+        );
 
-footer.className =
-"review-card-footer";
+    footer.className =
+        "review-card-footer";
 
-const guestName =
-document.createElement("span");
+    const guestName =
+        document.createElement(
+            "span"
+        );
 
-guestName.className =
-"review-card-name";
+    guestName.className =
+        "review-card-name";
 
-guestName.textContent =
-review.customer_name;
+    guestName.textContent =
+        review.customer_name ||
+        "Guest";
 
-const reviewDate =
-document.createElement("span");
+    const reviewDate =
+        document.createElement(
+            "span"
+        );
 
-if (review.created_at) {
+    if (review.created_at) {
+        const parsedDate =
+            new Date(
+                review.created_at
+            );
 
-reviewDate.textContent =
-new Date(
-review.created_at
-).toLocaleDateString(
-"en-IN",
-{
-day: "numeric",
-month: "short",
-year: "numeric"
-}
-);
+        if (
+            !Number.isNaN(
+                parsedDate.getTime()
+            )
+        ) {
+            reviewDate.textContent =
+                parsedDate
+                    .toLocaleDateString(
+                        "en-IN",
+                        {
+                            day:
+                                "numeric",
 
-}
+                            month:
+                                "short",
 
-footer.appendChild(guestName);
+                            year:
+                                "numeric"
+                        }
+                    );
+        }
+    }
 
-footer.appendChild(reviewDate);
+    footer.appendChild(
+        guestName
+    );
 
-card.appendChild(stars);
+    footer.appendChild(
+        reviewDate
+    );
 
-card.appendChild(reviewContent);
+    card.appendChild(
+        stars
+    );
 
-card.appendChild(footer);
+    card.appendChild(
+        reviewContent
+    );
 
-// Owner reply
+    card.appendChild(
+        footer
+    );
 
-if (
-review.owner_reply &&
-String(review.owner_reply).trim()
-) {
+    if (
+        review.owner_reply &&
+        String(
+            review.owner_reply
+        ).trim()
+    ) {
+        const ownerReply =
+            document.createElement(
+                "div"
+            );
 
-const ownerReply =
-document.createElement("div");
+        ownerReply.className =
+            "owner-reply";
 
-ownerReply.className =
-"owner-reply";
+        const ownerTitle =
+            document.createElement(
+                "strong"
+            );
 
-const ownerTitle =
-document.createElement("strong");
+        ownerTitle.textContent =
+            "Kaushalya Guest House";
 
-ownerTitle.textContent =
-"Kaushalya Guest House";
+        const ownerText =
+            document.createElement(
+                "p"
+            );
 
-const ownerText =
-document.createElement("p");
+        ownerText.textContent =
+            String(
+                review.owner_reply
+            ).trim();
 
-ownerText.textContent =
-review.owner_reply;
+        ownerReply.appendChild(
+            ownerTitle
+        );
 
-ownerReply.appendChild(ownerTitle);
+        ownerReply.appendChild(
+            ownerText
+        );
 
-ownerReply.appendChild(ownerText);
+        card.appendChild(
+            ownerReply
+        );
+    }
 
-card.appendChild(ownerReply);
-
-}
-
-return card;
-
+    return card;
 }
 
 // ============================
 // DISPLAY REVIEW SUMMARY
 // ============================
 
-function updateReviewSummary(reviews) {
+function updateReviewSummary(
+    reviews
+) {
+    if (
+        !averageRating ||
+        !averageStars ||
+        !reviewCount
+    ) {
+        return;
+    }
 
-const totalReviews =
-reviews.length;
+    const totalReviews =
+        reviews.length;
 
-if (totalReviews === 0) {
+    if (
+        totalReviews === 0
+    ) {
+        averageRating.textContent =
+            "New";
 
-averageRating.textContent = "New";
+        averageStars.textContent =
+            "☆☆☆☆☆";
 
-averageStars.textContent = "☆☆☆☆☆";
+        reviewCount.textContent =
+            "Be the first guest to leave a review";
 
-reviewCount.textContent =
-"Be the first guest to leave a review";
+        return;
+    }
 
-return;
+    const totalRating =
+        reviews.reduce(
+            (
+                total,
+                review
+            ) => {
+                return (
+                    total +
+                    (
+                        Number(
+                            review.rating
+                        ) || 0
+                    )
+                );
+            },
+            0
+        );
 
-}
+    const calculatedAverage =
+        totalRating /
+        totalReviews;
 
-const totalRating =
-reviews.reduce(
-(total, review) =>
-total + Number(review.rating),
-0
-);
+    const roundedAverage =
+        Math.max(
+            0,
+            Math.min(
+                5,
+                Math.round(
+                    calculatedAverage
+                )
+            )
+        );
 
-const calculatedAverage =
-totalRating / totalReviews;
+    averageRating.textContent =
+        calculatedAverage
+            .toFixed(1);
 
-averageRating.textContent =
-calculatedAverage.toFixed(1);
+    averageStars.textContent =
+        "★".repeat(
+            roundedAverage
+        ) +
+        "☆".repeat(
+            5 -
+            roundedAverage
+        );
 
-const roundedAverage =
-Math.round(calculatedAverage);
-
-averageStars.textContent =
-"★".repeat(roundedAverage) +
-"☆".repeat(5 - roundedAverage);
-
-reviewCount.textContent =
-`Based on ${totalReviews} approved guest review${
-totalReviews === 1 ? "" : "s"
-}`;
-
+    reviewCount.textContent =
+        `Based on ${totalReviews} approved guest review${
+            totalReviews === 1
+                ? ""
+                : "s"
+        }`;
 }
 
 // ============================
@@ -960,224 +1238,281 @@ totalReviews === 1 ? "" : "s"
 // ============================
 
 async function loadApprovedReviews() {
+    if (!reviewsContainer) {
+        return;
+    }
 
-if (!reviewsContainer) {
+    try {
+        const response =
+            await fetch(
+                `${BACKEND_URL}/reviews`
+            );
 
-return;
+        const result =
+            await response.json();
 
-}
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+            throw new Error(
+                result.message ||
+                "Unable to load reviews."
+            );
+        }
 
-try {
+        const reviews =
+            Array.isArray(
+                result.reviews
+            )
+                ? result.reviews
+                : [];
 
-const response = await fetch(
-BACKEND_URL + "/reviews"
-);
+        reviewsContainer.innerHTML =
+            "";
 
-const result = await response.json();
+        updateReviewSummary(
+            reviews
+        );
 
-if (!response.ok || !result.success) {
+        if (
+            reviews.length === 0
+        ) {
+            const emptyState =
+                document.createElement(
+                    "div"
+                );
 
-throw new Error(
-result.message ||
-"Unable to load reviews."
-);
+            emptyState.className =
+                "reviews-empty-state";
 
-}
+            const emptyIcon =
+                document.createElement(
+                    "span"
+                );
 
-const reviews =
-Array.isArray(result.reviews)
-? result.reviews
-: [];
+            emptyIcon.textContent =
+                "⭐";
 
-reviewsContainer.innerHTML = "";
+            const emptyText =
+                document.createElement(
+                    "p"
+                );
 
-updateReviewSummary(reviews);
+            emptyText.textContent =
+                "Approved guest reviews will appear here.";
 
-if (reviews.length === 0) {
+            emptyState.appendChild(
+                emptyIcon
+            );
 
-const emptyState =
-document.createElement("div");
+            emptyState.appendChild(
+                emptyText
+            );
 
-emptyState.className =
-"reviews-empty-state";
+            reviewsContainer.appendChild(
+                emptyState
+            );
 
-const emptyIcon =
-document.createElement("span");
+            return;
+        }
 
-emptyIcon.textContent = "⭐";
+        reviews.forEach(
+            (review) => {
+                reviewsContainer
+                    .appendChild(
+                        createReviewCard(
+                            review
+                        )
+                    );
+            }
+        );
+    } catch (error) {
+        console.error(
+            "LOAD REVIEWS ERROR:",
+            error
+        );
 
-const emptyText =
-document.createElement("p");
+        reviewsContainer.innerHTML =
+            "";
 
-emptyText.textContent =
-"Approved guest reviews will appear here.";
+        const errorState =
+            document.createElement(
+                "div"
+            );
 
-emptyState.appendChild(emptyIcon);
+        errorState.className =
+            "reviews-empty-state";
 
-emptyState.appendChild(emptyText);
+        const errorText =
+            document.createElement(
+                "p"
+            );
 
-reviewsContainer.appendChild(
-emptyState
-);
+        errorText.textContent =
+            "Guest reviews are temporarily unavailable.";
 
-return;
+        errorState.appendChild(
+            errorText
+        );
 
-}
-
-reviews.forEach(review => {
-
-reviewsContainer.appendChild(
-createReviewCard(review)
-);
-
-});
-
-}
-catch (error) {
-
-console.error(
-"LOAD REVIEWS ERROR:",
-error
-);
-
-reviewsContainer.innerHTML = "";
-
-const errorState =
-document.createElement("div");
-
-errorState.className =
-"reviews-empty-state";
-
-const errorText =
-document.createElement("p");
-
-errorText.textContent =
-"Guest reviews are temporarily unavailable.";
-
-errorState.appendChild(errorText);
-
-reviewsContainer.appendChild(
-errorState
-);
-
-}
-
+        reviewsContainer.appendChild(
+            errorState
+        );
+    }
 }
 
 loadApprovedReviews();
+
 // ============================
 // ADVANCE AMOUNT
 // ============================
 
-const roomSelect=
-document.getElementById("room");
+const roomSelect =
+    document.getElementById(
+        "room"
+    );
 
-const advanceBox=
-document.getElementById("advanceAmount");
+const advanceBox =
+    document.getElementById(
+        "advanceAmount"
+    );
 
-if(roomSelect && advanceBox){
+if (
+    roomSelect &&
+    advanceBox
+) {
+    const updateAdvanceAmount =
+        () => {
+            advanceBox.innerHTML =
+                roomSelect.value ===
+                "AC Room"
+                    ? "Advance Amount : ₹450"
+                    : "Advance Amount : ₹360";
+        };
 
-roomSelect.addEventListener("change",()=>{
+    roomSelect.addEventListener(
+        "change",
+        updateAdvanceAmount
+    );
 
-if(roomSelect.value==="AC Room"){
-
-advanceBox.innerHTML=
-"Advance Amount : ₹450";
-
-}
-
-else{
-
-advanceBox.innerHTML=
-"Advance Amount : ₹360";
-
-}
-
-});
-
+    updateAdvanceAmount();
 }
 
 // ============================
 // SCROLL ANIMATION
 // ============================
 
-const sections=
-document.querySelectorAll("section");
+const sections =
+    document.querySelectorAll(
+        "section"
+    );
 
-const observer=new IntersectionObserver(
+if (
+    "IntersectionObserver" in
+    window
+) {
+    const observer =
+        new IntersectionObserver(
+            (entries) => {
+                entries.forEach(
+                    (entry) => {
+                        if (
+                            entry
+                                .isIntersecting
+                        ) {
+                            entry.target
+                                .classList
+                                .add(
+                                    "show"
+                                );
 
-(entries)=>{
+                            observer
+                                .unobserve(
+                                    entry.target
+                                );
+                        }
+                    }
+                );
+            },
+            {
+                threshold: 0.15
+            }
+        );
 
-entries.forEach(entry=>{
-
-if(entry.isIntersecting){
-
-entry.target.classList.add("show");
-
+    sections.forEach(
+        (section) => {
+            observer.observe(
+                section
+            );
+        }
+    );
+} else {
+    sections.forEach(
+        (section) => {
+            section.classList.add(
+                "show"
+            );
+        }
+    );
 }
-
-});
-
-},
-
-{
-
-threshold:.15
-
-}
-
-);
-
-sections.forEach(section=>{
-
-observer.observe(section);
-
-});
 
 // ============================
 // BACK TO TOP BUTTON
 // ============================
 
-const topButton=document.createElement("button");
+const topButton =
+    document.createElement(
+        "button"
+    );
 
-topButton.className="backTop";
+topButton.className =
+    "backTop";
 
-topButton.innerHTML='<i class="fa-solid fa-arrow-up"></i>';
+topButton.type =
+    "button";
 
-document.body.appendChild(topButton);
+topButton.setAttribute(
+    "aria-label",
+    "Back to top"
+);
 
-window.addEventListener("scroll",()=>{
+topButton.innerHTML =
+    '<i class="fa-solid fa-arrow-up"></i>';
 
-if(window.scrollY>400){
+document.body.appendChild(
+    topButton
+);
 
-topButton.style.display="flex";
+window.addEventListener(
+    "scroll",
+    () => {
+        topButton.style.display =
+            window.scrollY > 400
+                ? "flex"
+                : "none";
+    }
+);
 
-}else{
-
-topButton.style.display="none";
-
-}
-
-});
-
-topButton.addEventListener("click",()=>{
-
-window.scrollTo({
-
-top:0,
-
-behavior:"smooth"
-
-});
-
-});
+topButton.addEventListener(
+    "click",
+    () => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+);
 
 // ============================
 // PAGE LOADED
 // ============================
 
-window.addEventListener("load",()=>{
-
-console.log("Kaushalya Guest House v7 Loaded Successfully");
-
-});
+window.addEventListener(
+    "load",
+    () => {
+        console.log(
+            "Kaushalya Guest House v8 Loaded Successfully"
+        );
+    }
+);

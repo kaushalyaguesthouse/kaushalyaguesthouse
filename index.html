@@ -387,7 +387,6 @@ Book Your Stay
 
 <form id="bookingForm">
 
-
 <input 
 id="name"
 type="text"
@@ -413,18 +412,15 @@ required>
 Check In
 </label>
 
-
 <input
 id="checkin"
 type="date"
 required>
 
 
-
 <label>
 Check Out
 </label>
-
 
 <input
 id="checkout"
@@ -432,21 +428,17 @@ type="date"
 required>
 
 
-
-
 <select id="room">
 
-<option>
-AC Room
+<option value="AC Room">
+AC Room - ₹1500/night
 </option>
 
-<option>
-Non AC Room
+<option value="Non AC Room">
+Non AC Room - ₹1200/night
 </option>
 
 </select>
-
-
 
 
 <textarea
@@ -455,14 +447,48 @@ placeholder="Special Request">
 </textarea>
 
 
+<h3>
+Choose Payment Method
+</h3>
+
+
+<label class="paymentOption">
+
+<input 
+type="radio"
+name="payment_method"
+value="advance"
+checked>
+
+Pay Advance Online (30%)
+
+</label>
+
+
+<label class="paymentOption">
+
+<input 
+type="radio"
+name="payment_method"
+value="later">
+
+Pay Later at Hotel
+
+</label>
+
+
+<div id="advanceAmount">
+
+Advance Amount: ₹450 (AC Room) / ₹360 (Non AC Room)
+
+</div>
 
 
 <button type="submit">
 
-Send Booking Request
+Confirm Booking
 
 </button>
-
 
 
 </form>

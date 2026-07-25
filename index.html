@@ -303,7 +303,219 @@ alt="Kaushalya Restaurant">
 <!-- =========================
      REVIEWS
 ========================== -->
+<!-- =========================================
+     GUEST REVIEWS SECTION
+========================================= -->
 
+<section id="reviews" class="reviews-section">
+
+    <div class="section-heading">
+        <span class="section-tag">Guest Feedback</span>
+        <h2>Guest Experiences</h2>
+        <p>
+            Share your experience at Kaushalya Guest House.
+            Your feedback helps us serve you better.
+        </p>
+    </div>
+
+    <!-- Review Summary -->
+    <div class="review-summary">
+
+        <div class="review-score">
+            <span id="averageRating">New</span>
+
+            <div
+                id="averageStars"
+                class="average-stars"
+                aria-label="Average guest rating"
+            >
+                ☆☆☆☆☆
+            </div>
+
+            <p id="reviewCount">
+                Be the first guest to leave a review
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Review Submission Form -->
+    <div class="review-form-card">
+
+        <h3>Write a Review</h3>
+
+        <form id="reviewForm">
+
+            <div class="review-form-grid">
+
+                <div class="form-group">
+                    <label for="reviewName">
+                        Your Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="reviewName"
+                        name="customer_name"
+                        placeholder="Enter your name"
+                        maxlength="80"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="reviewEmail">
+                        Email Address
+                    </label>
+
+                    <input
+                        type="email"
+                        id="reviewEmail"
+                        name="customer_email"
+                        placeholder="Enter your email"
+                        maxlength="120"
+                        required
+                    >
+                </div>
+
+            </div>
+
+            <!-- Star Rating -->
+            <div class="form-group rating-group">
+
+                <label>
+                    Your Rating
+                </label>
+
+                <div
+                    class="star-rating"
+                    id="starRating"
+                    role="radiogroup"
+                    aria-label="Choose a rating from 1 to 5 stars"
+                >
+
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="1"
+                        aria-label="1 star"
+                    >
+                        ★
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="2"
+                        aria-label="2 stars"
+                    >
+                        ★
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="3"
+                        aria-label="3 stars"
+                    >
+                        ★
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="4"
+                        aria-label="4 stars"
+                    >
+                        ★
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="5"
+                        aria-label="5 stars"
+                    >
+                        ★
+                    </button>
+
+                </div>
+
+                <input
+                    type="hidden"
+                    id="reviewRating"
+                    name="rating"
+                    value=""
+                    required
+                >
+
+                <small id="ratingMessage">
+                    Tap a star to select your rating.
+                </small>
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="reviewText">
+                    Your Review
+                </label>
+
+                <textarea
+                    id="reviewText"
+                    name="review"
+                    rows="5"
+                    placeholder="Tell us about your stay, room, cleanliness, service or overall experience..."
+                    minlength="10"
+                    maxlength="1000"
+                    required
+                ></textarea>
+
+                <div class="review-character-count">
+                    <span id="reviewCharacterCount">0</span>/1000
+                </div>
+
+            </div>
+
+            <button
+                type="submit"
+                id="reviewSubmitBtn"
+                class="review-submit-btn"
+            >
+                Submit Review
+            </button>
+
+            <p
+                id="reviewFormMessage"
+                class="review-form-message"
+                aria-live="polite"
+            ></p>
+
+        </form>
+
+    </div>
+
+    <!-- Approved Reviews -->
+    <div class="reviews-display">
+
+        <div class="reviews-display-heading">
+            <h3>Recent Guest Reviews</h3>
+        </div>
+
+        <div id="reviewsContainer" class="reviews-container">
+
+            <div class="reviews-empty-state">
+                <span>⭐</span>
+                <p>
+                    Approved guest reviews will appear here.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 <section class="reviews">
 
 <h2>Guest Reviews</h2>

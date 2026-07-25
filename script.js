@@ -29,7 +29,6 @@ document.getElementById("reviewName");
 const reviewEmail =
 document.getElementById("reviewEmail");
 
-// ... and continues until ...
 
 loadApprovedReviews();
 // ============================

@@ -1509,10 +1509,19 @@ transform:scale(1);
     outline: none;
 }
 
-.rating-star.active {
-    color: #f4b400;
+.rating-star.active,
+.rating-star.selected {
+    color: #f4b400 !important;
+}
+.rating-star {
+    -webkit-appearance: none;
+    appearance: none;
 }
 
+.rating-star:focus,
+.rating-star:active {
+    color: inherit;
+}
 #ratingMessage {
     display: block;
     margin-top: 9px;

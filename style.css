@@ -1,7 +1,7 @@
-/* ===================================
+/* =====================================================
    KAUSHALYA GUEST HOUSE
-   Premium Style v1.0
-=================================== */
+   Premium Style v7
+===================================================== */
 
 :root{
 --primary:#0B2545;
@@ -11,13 +11,14 @@
 --text:#1b1b1b;
 --shadow:0 15px 40px rgba(0,0,0,.12);
 --radius:18px;
+--transition:.35s ease;
 }
 
 body.dark{
---primary:#0d1117;
+--primary:#111827;
 --secondary:#FFD54A;
---white:#181818;
---light:#0f1722;
+--white:#1a1a1a;
+--light:#0b1220;
 --text:#ffffff;
 }
 
@@ -25,7 +26,7 @@ body.dark{
 margin:0;
 padding:0;
 box-sizing:border-box;
-font-family:'Poppins',sans-serif;
+font-family:"Poppins",sans-serif;
 }
 
 html{
@@ -35,81 +36,79 @@ scroll-behavior:smooth;
 body{
 background:var(--light);
 color:var(--text);
+overflow-x:hidden;
 }
 
-/* NAVBAR */
+/* ===========================
+   NAVBAR
+=========================== */
 
 nav{
 
 position:fixed;
-
 top:0;
-
 left:0;
-
 width:100%;
-
 height:75px;
 
 padding:0 7%;
 
 display:flex;
-
 align-items:center;
-
 justify-content:space-between;
 
-background:rgba(255,255,255,.85);
+background:rgba(255,255,255,.90);
 
-backdrop-filter:blur(16px);
+backdrop-filter:blur(18px);
 
-box-shadow:0 2px 20px rgba(0,0,0,.08);
+box-shadow:0 5px 20px rgba(0,0,0,.08);
 
 z-index:9999;
+
+transition:.3s;
 
 }
 
 body.dark nav{
 
-background:rgba(18,18,18,.85);
+background:rgba(15,23,42,.90);
 
 }
 
 .logo{
 
-font-size:28px;
+display:flex;
+align-items:center;
 
-font-weight:800;
+}
 
-letter-spacing:2px;
+.logo img{
 
-color:var(--primary);
+height:46px;
+width:auto;
+display:block;
 
 }
 
 nav ul{
 
 display:flex;
-
-gap:28px;
-
+gap:30px;
 list-style:none;
 
 }
 
-nav a{
+nav ul li a{
 
 text-decoration:none;
-
+font-weight:600;
 color:var(--text);
 
-font-weight:600;
-
-transition:.3s;
+transition:var(--transition);
 
 }
 
-nav a:hover{
+nav ul li a:hover{
 
 color:var(--secondary);
 
@@ -118,7 +117,6 @@ color:var(--secondary);
 .right-nav{
 
 display:flex;
-
 gap:12px;
 
 }
@@ -126,35 +124,47 @@ gap:12px;
 .right-nav button{
 
 border:none;
-
-cursor:pointer;
+background:var(--primary);
+color:#fff;
 
 padding:10px 14px;
 
 border-radius:10px;
 
-background:var(--primary);
+cursor:pointer;
 
-color:white;
+font-weight:600;
+
+transition:var(--transition);
 
 }
 
-/* HERO */
+.right-nav button:hover{
+
+transform:translateY(-2px);
+
+}
+
+/* ===========================
+   HERO
+=========================== */
 
 .hero{
 
 height:100vh;
 
-background:url("Outside front.jpg");
+background-image:url("Outside front.jpg");
 
 background-size:cover;
 
 background-position:center;
 
+background-repeat:no-repeat;
+
+transition:background-image 1s ease;
+
 display:flex;
-
 align-items:center;
-
 justify-content:center;
 
 position:relative;
@@ -163,35 +173,41 @@ position:relative;
 
 .overlay{
 
-background:rgba(0,0,0,.45);
+position:absolute;
+
+top:0;
+left:0;
 
 width:100%;
-
 height:100%;
+
+background:rgba(0,0,0,.45);
 
 display:flex;
 
 flex-direction:column;
 
-justify-content:center;
-
 align-items:center;
+
+justify-content:center;
 
 text-align:center;
 
-color:white;
-
 padding:20px;
+
+color:#fff;
 
 }
 
 .hero h1{
 
-font-size:64px;
+font-size:65px;
 
 font-weight:800;
 
-margin-bottom:18px;
+margin-bottom:15px;
+
+text-shadow:0 5px 18px rgba(0,0,0,.4);
 
 }
 
@@ -209,7 +225,7 @@ margin-bottom:35px;
 
 display:flex;
 
-gap:18px;
+gap:20px;
 
 flex-wrap:wrap;
 
@@ -219,35 +235,21 @@ justify-content:center;
 
 .btnPrimary{
 
-background:var(--secondary);
+display:inline-block;
 
-color:#000;
+background:var(--secondary);
 
 padding:15px 35px;
 
-border-radius:40px;
+border-radius:50px;
+
+color:#000;
 
 font-weight:700;
 
 text-decoration:none;
 
-transition:.35s;
-
-}
-
-.btnOutline{
-
-border:2px solid white;
-
-color:white;
-
-padding:15px 35px;
-
-border-radius:40px;
-
-text-decoration:none;
-
-transition:.35s;
+transition:var(--transition);
 
 }
 
@@ -255,21 +257,59 @@ transition:.35s;
 
 transform:translateY(-4px);
 
+box-shadow:0 10px 30px rgba(0,0,0,.15);
+
+}
+
+.btnOutline{
+
+display:inline-block;
+
+border:2px solid #fff;
+
+padding:15px 35px;
+
+border-radius:50px;
+
+text-decoration:none;
+
+color:#fff;
+
+font-weight:600;
+
+transition:var(--transition);
+
 }
 
 .btnOutline:hover{
 
-background:white;
+background:#fff;
 
-color:black;
+color:#000;
 
 }
 
-/* SECTIONS */
+/* ===========================
+   SECTIONS
+=========================== */
 
 section{
 
 padding:90px 8%;
+
+opacity:0;
+
+transform:translateY(50px);
+
+transition:.8s ease;
+
+}
+
+section.show{
+
+opacity:1;
+
+transform:translateY(0);
 
 }
 
@@ -287,13 +327,15 @@ color:var(--primary);
 
 font-size:18px;
 
-line-height:1.8;
+line-height:1.9;
 
 max-width:900px;
 
 }
 
-/* ROOMS */
+/* ===========================
+   ROOM CARDS
+=========================== */
 
 .roomGrid{
 
@@ -317,7 +359,7 @@ overflow:hidden;
 
 box-shadow:var(--shadow);
 
-transition:.35s;
+transition:var(--transition);
 
 }
 
@@ -335,6 +377,14 @@ height:250px;
 
 object-fit:cover;
 
+transition:.5s;
+
+}
+
+.card:hover img{
+
+transform:scale(1.08);
+
 }
 
 .card h3{
@@ -349,9 +399,9 @@ font-size:28px;
 
 padding:0 25px;
 
-color:var(--secondary);
-
 font-size:24px;
+
+color:var(--secondary);
 
 }
 
@@ -369,13 +419,13 @@ display:block;
 
 margin:20px;
 
-text-align:center;
-
 padding:15px;
+
+text-align:center;
 
 background:var(--primary);
 
-color:white;
+color:#fff;
 
 border-radius:12px;
 
@@ -383,9 +433,47 @@ text-decoration:none;
 
 font-weight:700;
 
+transition:var(--transition);
+
 }
 
-/* FEATURES */
+.bookBtn:hover{
+
+background:var(--secondary);
+
+color:#000;
+
+}
+
+/* ===========================
+   RESTAURANT
+=========================== */
+
+.galleryPreview{
+
+max-width:900px;
+
+margin:35px auto 0;
+
+}
+
+.galleryPreview img{
+
+width:100%;
+
+height:420px;
+
+object-fit:cover;
+
+border-radius:18px;
+
+box-shadow:var(--shadow);
+
+}
+
+/* ===========================
+   FEATURES
+=========================== */
 
 .featureGrid{
 
@@ -395,7 +483,7 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
 gap:25px;
 
-margin-top:30px;
+margin-top:35px;
 
 }
 
@@ -411,19 +499,29 @@ text-align:center;
 
 box-shadow:var(--shadow);
 
-font-size:40px;
+font-size:42px;
+
+transition:.35s;
+
+}
+
+.featureGrid div:hover{
+
+transform:translateY(-8px);
 
 }
 
 .featureGrid h3{
 
-margin-top:15px;
+margin-top:18px;
 
 font-size:20px;
 
 }
 
-/* GALLERY */
+/* ===========================
+   GALLERY
+=========================== */
 
 .gallery{
 
@@ -451,15 +549,19 @@ cursor:pointer;
 
 transition:.4s;
 
+box-shadow:var(--shadow);
+
 }
 
 .gallery img:hover{
 
-transform:scale(1.04);
+transform:scale(1.05);
 
 }
 
-/* REVIEWS */
+/* ===========================
+   REVIEWS
+=========================== */
 
 .review{
 
@@ -469,13 +571,19 @@ padding:30px;
 
 border-radius:18px;
 
+margin:20px 0;
+
 box-shadow:var(--shadow);
 
-margin:20px 0;
+font-size:18px;
+
+line-height:1.8;
 
 }
 
-/* FORM */
+/* ===========================
+   BOOKING FORM
+=========================== */
 
 form{
 
@@ -483,7 +591,17 @@ display:grid;
 
 gap:18px;
 
-max-width:700px;
+max-width:750px;
+
+margin:auto;
+
+background:var(--white);
+
+padding:35px;
+
+border-radius:20px;
+
+box-shadow:var(--shadow);
 
 }
 
@@ -491,92 +609,227 @@ input,
 select,
 textarea{
 
-padding:16px;
+width:100%;
+
+padding:15px;
+
+font-size:16px;
 
 border:1px solid #ddd;
 
 border-radius:12px;
 
-font-size:16px;
+background:#fff;
+
+outline:none;
+
+transition:.3s;
 
 }
 
-button{
+body.dark input,
+body.dark select,
+body.dark textarea{
 
-padding:16px;
+background:#222;
 
-background:var(--primary);
+color:#fff;
 
-color:white;
-
-border:none;
-
-border-radius:12px;
-
-font-size:18px;
-
-cursor:pointer;
+border-color:#444;
 
 }
 
-/* FOOTER */
+input:focus,
+select:focus,
+textarea:focus{
 
-footer{
-
-background:var(--primary);
-
-color:white;
-
-padding:40px;
-
-text-align:center;
+border-color:var(--secondary);
 
 }
 
-/* FLOATING BUTTONS */
+textarea{
 
-.floatingCall{
+resize:vertical;
 
-position:fixed;
+min-height:120px;
 
-right:20px;
+}
 
-bottom:95px;
+.roomNumbers{
 
-width:60px;
+display:grid;
 
-height:60px;
+grid-template-columns:1fr 1fr;
 
-border-radius:50%;
+gap:15px;
+
+}
+
+.paymentOption{
 
 display:flex;
 
 align-items:center;
 
-justify-content:center;
+gap:12px;
 
-background:#0066ff;
+font-weight:600;
 
-color:white;
-
-font-size:28px;
-
-text-decoration:none;
-
-box-shadow:var(--shadow);
-
-z-index:999;
+cursor:pointer;
 
 }
 
+.paymentOption input{
+
+width:auto;
+
+}
+
+#advanceAmount{
+
+padding:15px;
+
+background:#eef7ff;
+
+border-left:5px solid var(--secondary);
+
+border-radius:10px;
+
+font-weight:700;
+
+}
+
+body.dark #advanceAmount{
+
+background:#1b2638;
+
+}
+
+#bookingBtn{
+
+padding:16px;
+
+background:var(--primary);
+
+color:#fff;
+
+font-size:18px;
+
+font-weight:700;
+
+border:none;
+
+border-radius:12px;
+
+cursor:pointer;
+
+transition:.35s;
+
+}
+
+#bookingBtn:hover{
+
+background:var(--secondary);
+
+color:#000;
+
+transform:translateY(-2px);
+
+}
+
+#bookingBtn:disabled{
+
+opacity:.6;
+
+cursor:not-allowed;
+
+}
+
+/* ===========================
+   POLICY
+=========================== */
+
+.policy ul{
+
+padding-left:25px;
+
+line-height:2;
+
+}
+
+.policy li{
+
+margin-bottom:10px;
+
+}
+
+/* ===========================
+   OFFER
+=========================== */
+
+.offer{
+
+background:linear-gradient(135deg,#0B2545,#183b6d);
+
+color:#fff;
+
+border-radius:20px;
+
+}
+
+.offer h2{
+
+color:#FFD54A;
+
+}
+
+.offer p{
+
+font-size:18px;
+
+line-height:1.8;
+
+}
+
+/* ===========================
+   CONTACT
+=========================== */
+
+#contact p{
+
+margin:18px 0;
+
+font-size:18px;
+
+}
+
+#contact a{
+
+color:var(--primary);
+
+font-weight:600;
+
+text-decoration:none;
+
+}
+
+body.dark #contact a{
+
+color:#FFD54A;
+
+}
+
+/* ===========================
+   FLOATING BUTTONS
+=========================== */
+
+.floatingCall,
 .floatingWhatsapp{
 
 position:fixed;
 
 right:20px;
 
-bottom:20px;
-
 width:60px;
 
 height:60px;
@@ -589,83 +842,487 @@ align-items:center;
 
 justify-content:center;
 
-background:#25D366;
-
-color:white;
-
-font-size:30px;
-
 text-decoration:none;
+
+font-size:28px;
+
+color:#fff;
 
 box-shadow:var(--shadow);
 
-z-index:999;
+z-index:9999;
+
+transition:.35s;
 
 }
 
-/* MOBILE */
+.floatingCall{
 
-@media(max-width:768px){
+bottom:95px;
+
+background:#1565C0;
+
+}
+
+.floatingWhatsapp{
+
+bottom:20px;
+
+background:#25D366;
+
+}
+
+.floatingCall:hover,
+.floatingWhatsapp:hover{
+
+transform:scale(1.1);
+
+}
+
+/* ===========================
+   BACK TO TOP BUTTON
+=========================== */
+
+.backTop{
+
+position:fixed;
+
+right:95px;
+
+bottom:20px;
+
+width:55px;
+
+height:55px;
+
+border:none;
+
+border-radius:50%;
+
+display:none;
+
+align-items:center;
+
+justify-content:center;
+
+background:var(--primary);
+
+color:#fff;
+
+font-size:24px;
+
+cursor:pointer;
+
+box-shadow:var(--shadow);
+
+z-index:9999;
+
+transition:.35s;
+
+}
+
+.backTop:hover{
+
+background:var(--secondary);
+
+color:#000;
+
+transform:translateY(-3px);
+
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+
+footer{
+
+background:var(--primary);
+
+color:#fff;
+
+padding:40px 20px;
+
+text-align:center;
+
+margin-top:60px;
+
+}
+
+footer p{
+
+font-size:16px;
+
+letter-spacing:.5px;
+
+}
+
+/* ===========================
+   SCROLLBAR
+=========================== */
+
+::-webkit-scrollbar{
+
+width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+background:#ececec;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+background:var(--primary);
+
+border-radius:20px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+background:var(--secondary);
+
+}
+
+/* ===========================
+   FADE ANIMATION
+=========================== */
+
+.fadeUp{
+
+opacity:0;
+
+transform:translateY(40px);
+
+transition:.8s ease;
+
+}
+
+.fadeUp.show{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+/* ===========================
+   IMAGE LOADING EFFECT
+=========================== */
+
+img{
+
+max-width:100%;
+
+display:block;
+
+}
+
+.gallery img,
+.card img,
+.galleryPreview img{
+
+transition:transform .45s ease, box-shadow .45s ease;
+
+}
+
+.gallery img:hover,
+.card img:hover,
+.galleryPreview img:hover{
+
+box-shadow:0 20px 45px rgba(0,0,0,.18);
+
+}
+
+/* ===========================
+   BUTTON EFFECTS
+=========================== */
+
+button,
+.btnPrimary,
+.btnOutline,
+.bookBtn{
+
+transition:all .3s ease;
+
+}
+
+button:active,
+.btnPrimary:active,
+.btnOutline:active,
+.bookBtn:active{
+
+transform:scale(.97);
+
+}
+
+/* ===========================
+   MOBILE
+=========================== */
+
+@media (max-width:992px){
 
 nav{
-padding:0 20px;
-}
 
-nav ul{
-display:none;
+padding:0 20px;
+
 }
 
 .hero h1{
-font-size:42px;
+
+font-size:50px;
+
 }
 
 .hero p{
-font-size:18px;
+
+font-size:20px;
+
+}
+
+section{
+
+padding:80px 30px;
+
+}
+
+}
+
+@media (max-width:768px){
+
+nav{
+
+height:70px;
+
+}
+
+nav ul{
+
+display:none;
+
+}
+
+.hero{
+
+height:90vh;
+
+}
+
+.hero h1{
+
+font-size:38px;
+
+line-height:1.2;
+
+}
+
+.hero p{
+
+font-size:17px;
+
 }
 
 .heroButtons{
+
 flex-direction:column;
+
 width:100%;
+
+max-width:320px;
+
 }
 
 .btnPrimary,
 .btnOutline{
+
 width:100%;
+
 text-align:center;
+
 }
 
 section{
+
 padding:70px 20px;
+
 }
 
 section h2{
-font-size:34px;
-}
+
+font-size:32px;
 
 }
 
-.logo{
-display:flex;
-align-items:center;
+.roomGrid{
+
+grid-template-columns:1fr;
+
 }
 
-.logo img{
-height:45px;
-width:auto;
-max-width:180px;
-display:block;
-object-fit:contain;
+.featureGrid{
+
+grid-template-columns:1fr;
+
 }
 
-.galleryPreview{
-max-width:900px;
-margin:30px auto;
+.gallery{
+
+grid-template-columns:1fr;
+
+}
+
+.gallery img{
+
+height:220px;
+
 }
 
 .galleryPreview img{
-width:100%;
-height:400px;
-object-fit:cover;
-border-radius:18px;
-display:block;
+
+height:240px;
+
+}
+
+.roomNumbers{
+
+grid-template-columns:1fr;
+
+}
+
+.floatingCall{
+
+right:18px;
+
+bottom:90px;
+
+}
+
+.floatingWhatsapp{
+
+right:18px;
+
+bottom:18px;
+
+}
+
+.backTop{
+
+right:18px;
+
+bottom:165px;
+
+}
+
+}
+
+@media (max-width:480px){
+
+.hero h1{
+
+font-size:32px;
+
+}
+
+.hero p{
+
+font-size:15px;
+
+}
+
+.card h3{
+
+font-size:24px;
+
+}
+
+.card h4{
+
+font-size:20px;
+
+}
+
+form{
+
+padding:22px;
+
+}
+
+}
+
+/* ===========================
+   DARK MODE IMPROVEMENTS
+=========================== */
+
+body.dark .card,
+body.dark .review,
+body.dark form,
+body.dark .featureGrid div{
+
+background:#1c1c1c;
+
+color:#fff;
+
+}
+
+body.dark footer{
+
+background:#000;
+
+}
+
+body.dark .bookBtn{
+
+background:var(--secondary);
+
+color:#000;
+
+}
+
+body.dark .btnPrimary{
+
+color:#000;
+
+}
+
+/* ===========================
+   SMOOTH ANIMATION
+=========================== */
+
+.hero,
+.card,
+.featureGrid div,
+.review,
+.gallery img{
+
+will-change:transform;
+
+}
+
+.hero{
+
+animation:heroFade 1.2s ease;
+
+}
+
+@keyframes heroFade{
+
+from{
+
+opacity:0;
+
+transform:scale(1.03);
+
+}
+
+to{
+
+opacity:1;
+
+transform:scale(1);
+
+}
+
 }

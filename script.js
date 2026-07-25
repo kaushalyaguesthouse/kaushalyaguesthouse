@@ -477,7 +477,7 @@ console.log("Email Error:",emailError);
 // WHATSAPP
 // ============================
 
-const message=
+const message =
 
 `🏨 Kaushalya Guest House
 
@@ -509,15 +509,6 @@ Special Request :
 ${data.special_request || "None"}
 `;
 
-window.open(
-
-"https://wa.me/916205416451?text="+
-encodeURIComponent(message),
-
-"_blank"
-
-);
-
 alert(
 
 `Booking Confirmed!
@@ -530,11 +521,18 @@ Kaushalya Guest House.`
 
 );
 
+const whatsappURL =
+"https://wa.me/916205416451?text=" +
+encodeURIComponent(message);
+
+// Redirect to WhatsApp
+window.location.href = whatsappURL;
+
 form.reset();
 
-bookingBtn.disabled=false;
+bookingBtn.disabled = false;
 
-bookingBtn.innerHTML="Confirm Booking";
+bookingBtn.innerHTML = "Confirm Booking";
 
 }
 

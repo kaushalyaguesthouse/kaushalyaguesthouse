@@ -1,724 +1,268 @@
-/* ===========================================
-   KAUSHALYA GUEST HOUSE
-   SCRIPT v7
-=========================================== */
-
-// ============================
-// EMAILJS INITIALIZATION
-// ============================
-
-if (typeof emailjs !== "undefined") {
-    emailjs.init("XkkCrNFvEe1DQzBvG");
-}
-
-// ============================
-// BACKEND URL
-// ============================
+"use strict";
 
 const BACKEND_URL = "https://kaushalya-backend.onrender.com";
+const ROOM_PRICES = { "AC Room": 1500, "Non AC Room": 1200 };
+const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
-// ============================
-// DARK MODE
-// ============================
-
-const darkBtn = document.getElementById("darkBtn");
-
-if (darkBtn) {
-
-    darkBtn.addEventListener("click", () => {
-
-        document.body.classList.toggle("dark");
-
-        darkBtn.innerHTML =
-            document.body.classList.contains("dark")
-            ? "☀️"
-            : "🌙";
-
-    });
-
-}
-
-// ============================
-// LANGUAGE BUTTON
-// ============================
-
-const langBtn = document.getElementById("langBtn");
-
-let english = true;
-
-if (langBtn) {
-
-    langBtn.addEventListener("click", () => {
-
-        english = !english;
-
-        if (english) {
-
-            langBtn.innerHTML = "हिन्दी";
-
-            document.querySelector(".hero h1").innerHTML =
-                "Kaushalya Guest House";
-
-            document.querySelector(".hero p").innerHTML =
-                "Comfortable Stay in the Heart of Gomoh";
-
-        }
-
-        else {
-
-            langBtn.innerHTML = "English";
-
-            document.querySelector(".hero h1").innerHTML =
-                "कौशल्या गेस्ट हाउस";
-
-            document.querySelector(".hero p").innerHTML =
-                "गोमो के मुख्य बाजार में आरामदायक ठहराव";
-
-        }
-
-    });
-
-}
-
-// ============================
-// HERO IMAGE SLIDER
-// ============================
-
-const hero = document.querySelector(".hero");
-
-if (hero) {
-
-    const heroImages = [
-
-        "Outside front.jpg",
-        "Reception.jpg",
-        "Room3.JPG",
-        "Restaurant1.JPG"
-
-    ];
-
-    let heroIndex = 0;
-
-    hero.style.backgroundImage =
-        `url('${heroImages[0]}')`;
-
-    setInterval(() => {
-
-        heroIndex++;
-
-        if (heroIndex >= heroImages.length) {
-
-            heroIndex = 0;
-
-        }
-
-        hero.style.backgroundImage =
-            `url('${heroImages[heroIndex]}')`;
-
-    }, 5000);
-
-}
-
-// ============================
-// GALLERY LIGHTBOX
-// ============================
-
-const galleryImages =
-document.querySelectorAll(".gallery img");
-
-const lightbox =
-document.createElement("div");
-
-lightbox.style.cssText = `
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.92);
-display:none;
-justify-content:center;
-align-items:center;
-z-index:999999;
-cursor:pointer;
-`;
-
-lightbox.innerHTML = `
-<img
-style="
-max-width:92%;
-max-height:92%;
-border-radius:16px;
-box-shadow:0 15px 45px rgba(0,0,0,.4);
-">
-`;
-
-document.body.appendChild(lightbox);
-
-const lightImage =
-lightbox.querySelector("img");
-
-galleryImages.forEach(img=>{
-
-img.addEventListener("click",()=>{
-
-lightbox.style.display="flex";
-
-lightImage.src=img.src;
-
+document.addEventListener("DOMContentLoaded", () => {
+  initNavigation();
+  initTheme();
+  initLanguage();
+  initHeroSlider();
+  initGallery();
+  initBooking();
+  initReviews();
+  initRevealAnimations();
+  document.getElementById("year").textContent = new Date().getFullYear();
+  if (window.emailjs) window.emailjs.init("XkkCrNFvEe1DQzBvG");
 });
 
-});
-
-lightbox.onclick=()=>{
-
-lightbox.style.display="none";
-
-};
-
-// ============================
-// DATE VALIDATION
-// ============================
-
-const checkin =
-document.getElementById("checkin");
-
-const checkout =
-document.getElementById("checkout");
-
-if(checkin && checkout){
-
-const today =
-new Date().toISOString().split("T")[0];
-
-checkin.min=today;
-
-checkin.addEventListener("change",()=>{
-
-checkout.min=checkin.value;
-
-});
-
-}
-
-// ============================
-// BOOKING FORM
-// ============================
-
-const form = document.getElementById("bookingForm");
-const bookingBtn = document.getElementById("bookingBtn");
-
-if (form) {
-
-form.addEventListener("submit", async function (e) {
-
-e.preventDefault();
-
-bookingBtn.disabled = true;
-bookingBtn.innerHTML = "Please Wait...";
-
-try {
-
-const room = document.getElementById("room").value;
-
-const roomPrice =
-room === "AC Room"
-? 1500
-: 1200;
-
-const paymentMethod =
-document.querySelector(
-'input[name="payment_method"]:checked'
-).value;
-
-const bookingData = {
-
-customer_name:
-document.getElementById("name").value.trim(),
-
-phone:
-document.getElementById("phone").value.trim(),
-
-email:
-document.getElementById("email").value.trim(),
-
-room_type:
-room,
-
-check_in:
-document.getElementById("checkin").value,
-
-check_out:
-document.getElementById("checkout").value,
-
-adults:
-parseInt(document.getElementById("adults").value) || 1,
-
-children:
-parseInt(document.getElementById("children").value) || 0,
-
-amount:
-roomPrice,
-
-payment_type:
-paymentMethod === "advance"
-? "Advance Payment"
-: "Pay Later",
-
-payment_status:"Pending",
-
-razorpay_payment_id:null,
-
-special_request:
-document.getElementById("request").value
-
-};
-
-// ============================
-// PAY LATER
-// ============================
-
-if(paymentMethod==="later"){
-
-await createBooking(bookingData);
-
-bookingBtn.disabled=false;
-bookingBtn.innerHTML="Confirm Booking";
-
-return;
-
-}
-
-// ============================
-// CREATE RAZORPAY ORDER
-// ============================
-
-const orderResponse =
-await fetch(
-BACKEND_URL + "/create-order",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-amount: roomPrice * 0.30
-
-})
-
-}
-
-);
-
-const order = await orderResponse.json();
-
-if (!orderResponse.ok || !order.success) {
-    throw new Error(
-        order.message || "Unable to create order"
-    );
-}
-
-const options={
-
-key: order.key_id,
-
-amount:order.amount,
-
-currency:"INR",
-
-order_id:order.order_id,
-
-name:"Kaushalya Guest House",
-
-description:"Advance Booking",
-
-handler:async function(response){
-
-bookingData.payment_status="Paid";
-
-bookingData.razorpay_payment_id=
-response.razorpay_payment_id;
-
-await createBooking(bookingData);
-
-},
-
-prefill:{
-
-name:bookingData.customer_name,
-
-email:bookingData.email,
-
-contact:bookingData.phone
-
-},
-
-theme:{
-
-color:"#0B2545"
-
-}
-
-};
-
-const razor=new Razorpay(options);
-
-razor.on("payment.failed",function(){
-
-alert("Payment Failed");
-
-bookingBtn.disabled=false;
-bookingBtn.innerHTML="Confirm Booking";
-
-});
-
-razor.open();
-
-}
-
-catch(error){
-
-console.error(error);
-
-alert(error.message);
-
-bookingBtn.disabled=false;
-bookingBtn.innerHTML="Confirm Booking";
-
-}
-
-});
-
-}
-
-// ============================
-// CREATE BOOKING
-// ============================
-
-async function createBooking(data){
-
-try{
-
-const response = await fetch(
-
-BACKEND_URL + "/create-booking",
-
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify(data)
-
-}
-
-);
-
-const result = await response.json();
-
-if(!result.success){
-
-throw new Error(result.message || "Booking Failed");
-
-}
-
-// ============================
-// EMAIL CONFIRMATION
-// ============================
-
-const emailParams={
-
-customer_name:data.customer_name,
-
-customer_email:data.email,
-
-booking_id:result.booking_id,
-
-room_type:data.room_type,
-
-check_in:data.check_in,
-
-check_out:data.check_out,
-
-payment_type:data.payment_type,
-
-amount:data.amount
-
-};
-
-try{
-
-await emailjs.send(
-
-"service_k4u106n",
-
-"template_gmf6drc",
-
-emailParams
-
-);
-
-console.log("Email Sent");
-
-}catch(emailError){
-
-console.log("Email Error:",emailError);
-
-}
-
-// ============================
-// WHATSAPP
-// ============================
-
-const message =
-
-`🏨 Kaushalya Guest House
-
-Booking ID : ${result.booking_id}
-
-Guest : ${data.customer_name}
-
-Phone : ${data.phone}
-
-Email : ${data.email}
-
-Room : ${data.room_type}
-
-Adults : ${data.adults}
-
-Children : ${data.children}
-
-Check In : ${data.check_in}
-
-Check Out : ${data.check_out}
-
-Payment : ${data.payment_type}
-
-Status : ${data.payment_status}
-
-Amount : ₹${data.amount}
-
-Special Request :
-${data.special_request || "None"}
-`;
-
-alert(
-
-`Booking Confirmed!
-
-Booking ID:
-${result.booking_id}
-
-Thank you for choosing
-Kaushalya Guest House.`
-
-);
-
-const whatsappURL =
-"https://wa.me/916205416451?text=" +
-encodeURIComponent(message);
-
-// Redirect to WhatsApp
-window.location.href = whatsappURL;
-
-form.reset();
-
-bookingBtn.disabled = false;
-
-bookingBtn.innerHTML = "Confirm Booking";
-
-}
-
-catch(error){
-
-console.error(error);
-
-alert(error.message || "Server Error");
-
-bookingBtn.disabled=false;
-
-bookingBtn.innerHTML="Confirm Booking";
-
-}
-
-}
-// ============================
-// REVIEW STAR RATING
-// ============================
-
-const reviewRating =
-document.getElementById("reviewRating");
-
-const ratingMessage =
-document.getElementById("ratingMessage");
-
-const ratingStars =
-document.querySelectorAll(".rating-star");
-
-if (ratingStars.length > 0 && reviewRating) {
-
-  ratingStars.forEach((star) => {
-
-    star.addEventListener("click", () => {
-
-      const selectedRating =
-        Number(star.dataset.rating);
-
-      reviewRating.value =
-        String(selectedRating);
-
-      ratingStars.forEach((currentStar) => {
-
-        const currentRating =
-          Number(currentStar.dataset.rating);
-
-        const isSelected =
-          currentRating <= selectedRating;
-
-        currentStar.classList.toggle(
-          "active",
-          isSelected
-        );
-
-        currentStar.classList.toggle(
-          "selected",
-          isSelected
-        );
-
-      });
-
-      if (ratingMessage) {
-        ratingMessage.textContent =
-          `${selectedRating} star${
-            selectedRating === 1 ? "" : "s"
-          } selected`;
-      }
-
-    });
-
+function initNavigation() {
+  const header = document.querySelector(".site-header");
+  const menuButton = document.getElementById("menuBtn");
+  const links = document.getElementById("navLinks");
+  const closeMenu = () => {
+    links.classList.remove("open");
+    menuButton.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("menu-open");
+  };
+  menuButton.addEventListener("click", () => {
+    const open = menuButton.getAttribute("aria-expanded") !== "true";
+    menuButton.setAttribute("aria-expanded", String(open));
+    links.classList.toggle("open", open);
+    document.body.classList.toggle("menu-open", open);
   });
-
-}
-// ============================
-// ADVANCE AMOUNT
-// ============================
-
-const roomSelect=
-document.getElementById("room");
-
-const advanceBox=
-document.getElementById("advanceAmount");
-
-if(roomSelect && advanceBox){
-
-roomSelect.addEventListener("change",()=>{
-
-if(roomSelect.value==="AC Room"){
-
-advanceBox.innerHTML=
-"Advance Amount : ₹450";
-
+  links.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+  window.addEventListener("scroll", () => header.classList.toggle("scrolled", window.scrollY > 30), { passive: true });
 }
 
-else{
-
-advanceBox.innerHTML=
-"Advance Amount : ₹360";
-
+function initTheme() {
+  const button = document.getElementById("darkBtn");
+  const saved = localStorage.getItem("kgh-theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.body.classList.toggle("dark", saved ? saved === "dark" : prefersDark);
+  const update = () => {
+    const dark = document.body.classList.contains("dark");
+    button.textContent = dark ? "☀" : "☾";
+    button.setAttribute("aria-label", `Switch to ${dark ? "light" : "dark"} mode`);
+  };
+  update();
+  button.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("kgh-theme", document.body.classList.contains("dark") ? "dark" : "light");
+    update();
+  });
 }
 
-});
+const translations = {
+  navRooms: "कमरे", navRestaurant: "रेस्तरां", navGallery: "गैलरी", navReviews: "समीक्षाएँ", navContact: "संपर्क", bookNow: "बुक करें",
+  heroEyebrow: "गोमो में आपका हार्दिक स्वागत", heroTitle: "आराम से रहें।<br><em>घर जैसा महसूस करें।</em>", heroCopy: "आरामदायक कमरे, आत्मीय सेवा और घर जैसा भोजन—गोमो मुख्य बाजार के बीचों-बीच।", checkAvailability: "उपलब्धता देखें", callUs: "कॉल करें", station: "गोमो स्टेशन से", support: "24 घंटे सहायता", starting: "कमरे यहाँ से",
+  aboutEyebrow: "अपनापन और आराम", welcomeTitle: "गोमो के बीचों-बीच आपका सुविधाजनक ठहराव", welcomeCopy: "गोमो मुख्य बाजार स्थित कौशल्या गेस्ट हाउस परिवारों, जोड़ों और व्यावसायिक यात्रियों के लिए साफ-सुथरे, विशाल कमरे प्रदान करता है। आरामदायक बिस्तर, वाई-फाई, पार्किंग, रेस्तरां और रेलवे स्टेशन तक आसान पहुँच का आनंद लें।",
+  stayEyebrow: "अपनी पसंद से रहें", roomsTitle: "सुकून भरी रातों के लिए कमरे", roomsCopy: "आरामदायक यात्रा के लिए जरूरी सुविधाएँ और हमारी आत्मीय सेवा।", popular: "सबसे लोकप्रिय", acRoom: "वातानुकूलित कमरा", nonAcRoom: "सामान्य नॉन-एसी कमरा", perNight: "/ रात", airConditioning: "एयर कंडीशनिंग", wifi: "मुफ्त वाई-फाई", bathroom: "अटैच्ड बाथरूम", housekeeping: "रोजाना सफाई", familyFriendly: "परिवार के अनुकूल", chooseRoom: "यह कमरा चुनें",
+  diningEyebrow: "ताजा और स्वादिष्ट", restaurantTitle: "अपनापन के साथ परोसा अच्छा भोजन", restaurantCopy: "सुबह ताजे नाश्ते से शुरुआत करें, दोपहर का भरपूर भोजन करें या रात के खाने के साथ दिन खत्म करें। हमारा भूतल का पारिवारिक रेस्तरां दिन भर स्वादिष्ट शाकाहारी घरेलू भोजन परोसता है।", detailsEyebrow: "हर जरूरी सुविधा", featuresTitle: "सुविधाजनक ठहराव के लिए सब कुछ", wifiCopy: "अपनी यात्रा के दौरान जुड़े रहें।", parking: "मुफ्त पार्किंग", parkingCopy: "होटल के मेहमानों के लिए सुविधाजनक पार्किंग।", centralLocation: "मुख्य स्थान", locationCopy: "मुख्य बाजार, स्टेशन से केवल 650 मीटर।", supportCopy: "हर समय सहायता उपलब्ध है।",
+  lookEyebrow: "एक नजर डालें", galleryTitle: "आपके ठहराव की एक झलक", galleryHint: "तस्वीर को पूरा देखने के लिए चुनें।", feedbackEyebrow: "मेहमानों की राय", reviewsTitle: "हमारे मेहमानों के अनुभव", reviewsCopy: "हर ठहराव को बेहतर बनाने में हमारी मदद के लिए अपनी ईमानदार राय दें।", writeReview: "समीक्षा लिखें", yourName: "आपका नाम", emailAddress: "ईमेल पता", yourRating: "आपकी रेटिंग", yourReview: "आपकी समीक्षा", submitReview: "समीक्षा भेजें",
+  reserveEyebrow: "अपनी यात्रा की योजना बनाएँ", bookingTitle: "अपना कमरा बुक करें", bookingCopy: "अपनी तारीखें और कमरा चुनें। पुष्टि से पहले हम तुरंत कुल मूल्य बताएँगे।", longStay: "लंबे ठहराव का लाभ", offerCopy: "7 रात रुकें और केवल 6 रातों का भुगतान करें। हर सातवीं रात मुफ्त है।", fullName: "पूरा नाम", mobile: "मोबाइल नंबर", checkIn: "चेक-इन", checkOut: "चेक-आउट", roomType: "कमरे का प्रकार", adults: "वयस्क", children: "बच्चे", specialRequest: "विशेष अनुरोध", paymentMethod: "भुगतान का तरीका", advanceOnline: "30% अग्रिम ऑनलाइन भुगतान", securePayment: "रेजरपे द्वारा सुरक्षित भुगतान", payHotel: "होटल में भुगतान", payArrival: "आगमन पर भुगतान करें", stayLength: "ठहराव", roomTotal: "कुल कमरे का मूल्य", advanceDue: "अभी देय अग्रिम", confirmBooking: "बुकिंग की पुष्टि करें"
+};
 
+function initLanguage() {
+  const button = document.getElementById("langBtn");
+  const originals = new Map([...document.querySelectorAll("[data-i18n]")].map((node) => [node, node.innerHTML]));
+  let hindi = false;
+  button.addEventListener("click", () => {
+    hindi = !hindi;
+    document.documentElement.lang = hindi ? "hi" : "en";
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+      node.innerHTML = hindi ? (translations[node.dataset.i18n] || originals.get(node)) : originals.get(node);
+    });
+    button.textContent = hindi ? "English" : "हिन्दी";
+    button.setAttribute("aria-label", `Switch language to ${hindi ? "English" : "Hindi"}`);
+  });
 }
 
-// ============================
-// SCROLL ANIMATION
-// ============================
-
-const sections=
-document.querySelectorAll("section");
-
-const observer=new IntersectionObserver(
-
-(entries)=>{
-
-entries.forEach(entry=>{
-
-if(entry.isIntersecting){
-
-entry.target.classList.add("show");
-
+function initHeroSlider() {
+  const hero = document.querySelector(".hero");
+  const dots = document.querySelector(".slide-dots");
+  const images = ["Outside front.jpg", "Reception.jpg", "Room3.JPG", "Restaurant1.JPG"];
+  let index = 0;
+  let timer;
+  images.forEach((src) => { const image = new Image(); image.src = src; });
+  const show = (next) => {
+    index = next;
+    hero.style.backgroundImage = `url("${images[index]}")`;
+    dots.querySelectorAll("button").forEach((dot, i) => dot.classList.toggle("active", i === index));
+  };
+  images.forEach((_, i) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", `Show hotel image ${i + 1}`);
+    dot.addEventListener("click", () => { show(i); restart(); });
+    dots.append(dot);
+  });
+  const restart = () => {
+    clearInterval(timer);
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) timer = setInterval(() => show((index + 1) % images.length), 5500);
+  };
+  show(0);
+  restart();
 }
 
-});
-
-},
-
-{
-
-threshold:.15
-
+function initGallery() {
+  const buttons = [...document.querySelectorAll(".gallery button")];
+  const dialog = document.getElementById("lightbox");
+  const display = dialog.querySelector("img");
+  let index = 0;
+  const show = (next) => {
+    index = (next + buttons.length) % buttons.length;
+    const image = buttons[index].querySelector("img");
+    display.src = image.src;
+    display.alt = image.alt;
+  };
+  buttons.forEach((button, i) => button.addEventListener("click", () => { show(i); dialog.showModal(); document.body.classList.add("lightbox-open"); }));
+  dialog.querySelector(".lightbox-close").addEventListener("click", () => dialog.close());
+  dialog.querySelector(".lightbox-prev").addEventListener("click", () => show(index - 1));
+  dialog.querySelector(".lightbox-next").addEventListener("click", () => show(index + 1));
+  dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+  dialog.addEventListener("close", () => document.body.classList.remove("lightbox-open"));
+  dialog.addEventListener("keydown", (event) => { if (event.key === "ArrowLeft") show(index - 1); if (event.key === "ArrowRight") show(index + 1); });
 }
 
-);
-
-sections.forEach(section=>{
-
-observer.observe(section);
-
-});
-
-// ============================
-// BACK TO TOP BUTTON
-// ============================
-
-const topButton=document.createElement("button");
-
-topButton.className="backTop";
-
-topButton.innerHTML='<i class="fa-solid fa-arrow-up"></i>';
-
-document.body.appendChild(topButton);
-
-window.addEventListener("scroll",()=>{
-
-if(window.scrollY>400){
-
-topButton.style.display="flex";
-
-}else{
-
-topButton.style.display="none";
-
+function localDate(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
-});
+function initBooking() {
+  const form = document.getElementById("bookingForm");
+  const checkin = document.getElementById("checkin");
+  const checkout = document.getElementById("checkout");
+  const room = document.getElementById("room");
+  const button = document.getElementById("bookingBtn");
+  const message = document.getElementById("bookingMessage");
+  const today = new Date();
+  const dateString = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  checkin.min = dateString(today);
 
-topButton.addEventListener("click",()=>{
+  const totals = () => {
+    if (!checkin.value || !checkout.value) return null;
+    const nights = Math.round((localDate(checkout.value) - localDate(checkin.value)) / 86400000);
+    if (nights < 1) return null;
+    const billableNights = nights - Math.floor(nights / 7);
+    const total = billableNights * ROOM_PRICES[room.value];
+    return { nights, billableNights, total, advance: Math.round(total * .3) };
+  };
+  const updatePrice = () => {
+    const cost = totals();
+    document.getElementById("nightsDisplay").textContent = cost ? `${cost.nights} night${cost.nights === 1 ? "" : "s"}${cost.billableNights < cost.nights ? ` (${cost.nights - cost.billableNights} free)` : ""}` : "Select dates";
+    document.getElementById("totalDisplay").textContent = cost ? rupees.format(cost.total) : "—";
+    document.getElementById("advanceDisplay").textContent = cost ? rupees.format(cost.advance) : "—";
+  };
+  checkin.addEventListener("change", () => {
+    if (checkin.value) {
+      const minimumCheckout = localDate(checkin.value);
+      minimumCheckout.setDate(minimumCheckout.getDate() + 1);
+      checkout.min = dateString(minimumCheckout);
+      if (checkout.value && checkout.value < checkout.min) checkout.value = "";
+    }
+    updatePrice();
+  });
+  [checkout, room].forEach((field) => field.addEventListener("change", updatePrice));
+  document.querySelectorAll('input[name="payment_method"]').forEach((input) => input.addEventListener("change", () => document.querySelector(".advance-row").hidden = input.value === "later" && input.checked));
+  document.querySelectorAll(".choose-room").forEach((choose) => choose.addEventListener("click", () => { room.value = choose.dataset.room; updatePrice(); document.getElementById("booking").scrollIntoView({ behavior: "smooth" }); }));
 
-window.scrollTo({
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    message.textContent = "";
+    const cost = totals();
+    if (!form.checkValidity()) { form.reportValidity(); message.textContent = "Please complete all required fields correctly."; return; }
+    if (!cost) { message.textContent = "Check-out must be at least one day after check-in."; checkout.focus(); return; }
+    const paymentMethod = form.querySelector('input[name="payment_method"]:checked').value;
+    const data = {
+      customer_name: document.getElementById("name").value.trim(), phone: document.getElementById("phone").value.replace(/[\s-]/g, ""), email: document.getElementById("email").value.trim(), room_type: room.value,
+      check_in: checkin.value, check_out: checkout.value, adults: Number(document.getElementById("adults").value), children: Number(document.getElementById("children").value), amount: cost.total,
+      payment_type: paymentMethod === "advance" ? "Advance Payment" : "Pay Later", payment_status: "Pending", razorpay_payment_id: null, special_request: document.getElementById("request").value.trim()
+    };
+    button.disabled = true;
+    button.textContent = "Please wait…";
+    try {
+      if (paymentMethod === "later") await createBooking(data, cost);
+      else await startOnlinePayment(data, cost);
+    } catch (error) {
+      console.error(error);
+      message.textContent = error.message || "We could not complete the booking. Please try again or call us.";
+      button.disabled = false;
+      button.textContent = "Confirm booking";
+    }
+  });
+}
 
-top:0,
+async function startOnlinePayment(data, cost) {
+  if (!window.Razorpay) throw new Error("The secure payment service is unavailable. Please choose pay at hotel or try again.");
+  const response = await fetch(`${BACKEND_URL}/create-order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: cost.advance }) });
+  const order = await response.json();
+  if (!response.ok || !order.success) throw new Error(order.message || "Unable to start secure payment.");
+  const razorpay = new window.Razorpay({ key: order.key_id, amount: order.amount, currency: "INR", order_id: order.order_id, name: "Kaushalya Guest House", description: `30% advance for ${cost.nights}-night stay`, prefill: { name: data.customer_name, email: data.email, contact: data.phone }, theme: { color: "#102b28" }, handler: async (payment) => { data.payment_status = "Paid"; data.razorpay_payment_id = payment.razorpay_payment_id; await createBooking(data, cost); }, modal: { ondismiss: resetBookingButton } });
+  razorpay.on("payment.failed", () => { document.getElementById("bookingMessage").textContent = "Payment failed. No booking was created; please try again."; resetBookingButton(); });
+  razorpay.open();
+}
 
-behavior:"smooth"
+function resetBookingButton() {
+  const button = document.getElementById("bookingBtn");
+  button.disabled = false;
+  button.textContent = "Confirm booking";
+}
 
-});
+async function createBooking(data, cost) {
+  const response = await fetch(`${BACKEND_URL}/create-booking`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const result = await response.json();
+  if (!response.ok || !result.success) throw new Error(result.message || "Booking could not be created.");
+  if (window.emailjs) {
+    window.emailjs.send("service_k4u106n", "template_gmf6drc", { customer_name: data.customer_name, customer_email: data.email, booking_id: result.booking_id, room_type: data.room_type, check_in: data.check_in, check_out: data.check_out, payment_type: data.payment_type, amount: data.amount }).catch((error) => console.warn("Confirmation email could not be sent", error));
+  }
+  const whatsapp = `🏨 Kaushalya Guest House\n\nBooking ID: ${result.booking_id}\nGuest: ${data.customer_name}\nPhone: ${data.phone}\nEmail: ${data.email}\nRoom: ${data.room_type}\nGuests: ${data.adults} adult(s), ${data.children} child(ren)\nCheck-in: ${data.check_in}\nCheck-out: ${data.check_out}\nNights: ${cost.nights}\nPayment: ${data.payment_type}\nStatus: ${data.payment_status}\nTotal: ₹${data.amount}\nSpecial request: ${data.special_request || "None"}`;
+  document.getElementById("bookingMessage").classList.add("success");
+  document.getElementById("bookingMessage").textContent = `Booking ${result.booking_id} confirmed. Opening WhatsApp…`;
+  document.getElementById("bookingForm").reset();
+  resetBookingButton();
+  window.location.href = `https://wa.me/916205416451?text=${encodeURIComponent(whatsapp)}`;
+}
 
-});
+function initReviews() {
+  const form = document.getElementById("reviewForm");
+  const rating = document.getElementById("reviewRating");
+  const stars = [...document.querySelectorAll("#starRating button")];
+  const message = document.getElementById("reviewFormMessage");
+  const text = document.getElementById("reviewText");
+  const setRating = (value) => {
+    rating.value = value;
+    stars.forEach((star) => { const selected = Number(star.dataset.rating) <= value; star.classList.toggle("active", selected); star.setAttribute("aria-checked", String(Number(star.dataset.rating) === value)); });
+    document.getElementById("ratingMessage").textContent = `${value} star${value === 1 ? "" : "s"} selected.`;
+  };
+  stars.forEach((star) => { star.addEventListener("click", () => setRating(Number(star.dataset.rating))); star.addEventListener("keydown", (event) => { const current = Number(rating.value) || 1; if (event.key === "ArrowRight" || event.key === "ArrowUp") { event.preventDefault(); setRating(Math.min(5, current + 1)); } if (event.key === "ArrowLeft" || event.key === "ArrowDown") { event.preventDefault(); setRating(Math.max(1, current - 1)); } }); });
+  text.addEventListener("input", () => document.getElementById("reviewCharacterCount").textContent = text.value.length);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault(); message.className = "form-message";
+    if (!rating.value) { message.textContent = "Please choose a star rating."; stars[0].focus(); return; }
+    if (!form.checkValidity()) { form.reportValidity(); message.textContent = "Please complete every review field correctly."; return; }
+    const review = { name: document.getElementById("reviewName").value.trim(), rating: Number(rating.value), text: text.value.trim() };
+    renderReview(review);
+    form.reset(); setRating(0); document.getElementById("reviewCharacterCount").textContent = "0";
+    message.className = "form-message success"; message.textContent = "Thank you! Your review has been added to this page.";
+  });
+}
 
-// ============================
-// PAGE LOADED
-// ============================
+function renderReview(review) {
+  const article = document.createElement("article");
+  article.className = "testimonial";
+  const stars = document.createElement("div"); stars.className = "stars"; stars.setAttribute("aria-label", `${review.rating} out of 5 stars`); stars.textContent = "★".repeat(review.rating) + "☆".repeat(5 - review.rating);
+  const quote = document.createElement("blockquote"); quote.textContent = `“${review.text}”`;
+  const byline = document.createElement("p"); byline.textContent = `— ${review.name}`;
+  article.append(stars, quote, byline);
+  document.getElementById("reviewsContainer").prepend(article);
+}
 
-window.addEventListener("load",()=>{
-
-console.log("Kaushalya Guest House v7 Loaded Successfully");
-
-});
+function initRevealAnimations() {
+  if (!("IntersectionObserver" in window)) return;
+  const elements = document.querySelectorAll(".room-card, .feature-grid article, .testimonial, .section-heading, .split-image, .split-copy");
+  const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add("visible"); observer.unobserve(entry.target); } }), { threshold: .12 });
+  elements.forEach((element) => { element.classList.add("reveal"); observer.observe(element); });
+}

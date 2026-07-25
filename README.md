@@ -1,16 +1,22 @@
-## Hi there 👋
+# Kaushalya Guest House
 
-<!--
-**kaushalyaguesthouse/kaushalyaguesthouse** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Public website for Kaushalya Guest House in Gomoh, Jharkhand. The site is a static, responsive frontend designed for GitHub Pages.
 
-Here are some ideas to get you started:
+## Local preview
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+Serve the repository root with any static server:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000`.
+
+## Frontend integrations
+
+- Booking requests use the existing hosted booking service.
+- Online advance payments use Razorpay Checkout through that booking service.
+- Confirmation emails use EmailJS when its browser SDK is available.
+- Successful booking requests open a pre-filled WhatsApp message.
+
+The website remains usable as a static page if a third-party script is temporarily unavailable, but booking submission and payment require their respective remote services.

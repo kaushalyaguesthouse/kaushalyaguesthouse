@@ -13,22 +13,7 @@ if (typeof emailjs !== "undefined") {
 
 
 
-const BACKEND_URL = "https://kaushalya-backend.onrender.com";
-// ============================
-// GUEST REVIEW SYSTEM
-// ============================
-
-const reviewForm =
-document.getElementById("reviewForm");
-
-const reviewName =
-document.getElementById("reviewName");
-
-const reviewEmail =
-document.getElementById("reviewEmail");
-
-
-loadApprovedReviews();
+const BACKEND_URL = "https://kaushalya-
 // ============================
 // DARK MODE
 // ============================

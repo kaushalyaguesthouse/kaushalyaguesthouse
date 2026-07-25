@@ -212,18 +212,68 @@ function resetBookingButton() {
 }
 
 async function createBooking(data, cost) {
-  const response = await fetch(`${BACKEND_URL}/create-booking`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const idempotencyKey =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  const response = await fetch(`${BACKEND_URL}/create-booking`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey
+    },
+    body: JSON.stringify(data)
+  });
+
   const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.message || "Booking could not be created.");
-  if (window.emailjs) {
-    window.emailjs.send("service_k4u106n", "template_gmf6drc", { customer_name: data.customer_name, customer_email: data.email, booking_id: result.booking_id, room_type: data.room_type, check_in: data.check_in, check_out: data.check_out, payment_type: data.payment_type, amount: data.amount }).catch((error) => console.warn("Confirmation email could not be sent", error));
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Booking could not be created.");
   }
-  const whatsapp = `🏨 Kaushalya Guest House\n\nBooking ID: ${result.booking_id}\nGuest: ${data.customer_name}\nPhone: ${data.phone}\nEmail: ${data.email}\nRoom: ${data.room_type}\nGuests: ${data.adults} adult(s), ${data.children} child(ren)\nCheck-in: ${data.check_in}\nCheck-out: ${data.check_out}\nNights: ${cost.nights}\nPayment: ${data.payment_type}\nStatus: ${data.payment_status}\nTotal: ₹${data.amount}\nSpecial request: ${data.special_request || "None"}`;
+
+  if (window.emailjs) {
+    window.emailjs
+      .send("service_k4u106n", "template_gmf6drc", {
+        customer_name: data.customer_name,
+        customer_email: data.email,
+        booking_id: result.booking_id,
+        room_type: data.room_type,
+        check_in: data.check_in,
+        check_out: data.check_out,
+        payment_type: data.payment_type,
+        amount: data.amount
+      })
+      .catch((error) =>
+        console.warn("Confirmation email could not be sent", error)
+      );
+  }
+
+  const whatsapp =
+    `🏨 Kaushalya Guest House\n\n` +
+    `Booking ID: ${result.booking_id}\n` +
+    `Guest: ${data.customer_name}\n` +
+    `Phone: ${data.phone}\n` +
+    `Email: ${data.email}\n` +
+    `Room: ${data.room_type}\n` +
+    `Guests: ${data.adults} adult(s), ${data.children} child(ren)\n` +
+    `Check-in: ${data.check_in}\n` +
+    `Check-out: ${data.check_out}\n` +
+    `Nights: ${cost.nights}\n` +
+    `Payment: ${data.payment_type}\n` +
+    `Status: ${data.payment_status}\n` +
+    `Total: ₹${data.amount}\n` +
+    `Special request: ${data.special_request || "None"}`;
+
   document.getElementById("bookingMessage").classList.add("success");
-  document.getElementById("bookingMessage").textContent = `Booking ${result.booking_id} confirmed. Opening WhatsApp…`;
+  document.getElementById("bookingMessage").textContent =
+    `Booking ${result.booking_id} confirmed. Opening WhatsApp…`;
+
   document.getElementById("bookingForm").reset();
   resetBookingButton();
-  window.location.href = `https://wa.me/916205416451?text=${encodeURIComponent(whatsapp)}`;
+
+  window.location.href =
+    `https://wa.me/916205416451?text=${encodeURIComponent(whatsapp)}`;
 }
 
 function initReviews() {

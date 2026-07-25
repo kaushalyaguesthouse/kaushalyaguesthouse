@@ -549,7 +549,519 @@ bookingBtn.innerHTML="Confirm Booking";
 }
 
 }
+// ============================
+// GUEST REVIEW SYSTEM
+// ============================
 
+const reviewForm =
+document.getElementById("reviewForm");
+
+const reviewName =
+document.getElementById("reviewName");
+
+const reviewEmail =
+document.getElementById("reviewEmail");
+
+const reviewRating =
+document.getElementById("reviewRating");
+
+const reviewText =
+document.getElementById("reviewText");
+
+const reviewSubmitBtn =
+document.getElementById("reviewSubmitBtn");
+
+const reviewFormMessage =
+document.getElementById("reviewFormMessage");
+
+const ratingMessage =
+document.getElementById("ratingMessage");
+
+const ratingStars =
+document.querySelectorAll(".rating-star");
+
+const reviewCharacterCount =
+document.getElementById("reviewCharacterCount");
+
+const reviewsContainer =
+document.getElementById("reviewsContainer");
+
+const averageRating =
+document.getElementById("averageRating");
+
+const averageStars =
+document.getElementById("averageStars");
+
+const reviewCount =
+document.getElementById("reviewCount");
+
+// ============================
+// SELECT STAR RATING
+// ============================
+
+if (ratingStars.length > 0) {
+
+ratingStars.forEach(star => {
+
+star.addEventListener("click", () => {
+
+const selectedRating =
+Number(star.dataset.rating);
+
+reviewRating.value =
+String(selectedRating);
+
+ratingStars.forEach(currentStar => {
+
+const currentRating =
+Number(currentStar.dataset.rating);
+
+currentStar.classList.toggle(
+"active",
+currentRating <= selectedRating
+);
+
+});
+
+if (ratingMessage) {
+
+ratingMessage.textContent =
+`${selectedRating} star${
+selectedRating === 1 ? "" : "s"
+} selected`;
+
+}
+
+});
+
+});
+
+}
+
+// ============================
+// REVIEW CHARACTER COUNT
+// ============================
+
+if (reviewText && reviewCharacterCount) {
+
+reviewText.addEventListener("input", () => {
+
+reviewCharacterCount.textContent =
+String(reviewText.value.length);
+
+});
+
+}
+
+// ============================
+// SUBMIT GUEST REVIEW
+// ============================
+
+if (reviewForm) {
+
+reviewForm.addEventListener(
+"submit",
+async function (event) {
+
+event.preventDefault();
+
+const selectedRating =
+Number(reviewRating.value);
+
+if (
+!Number.isInteger(selectedRating) ||
+selectedRating < 1 ||
+selectedRating > 5
+) {
+
+reviewFormMessage.textContent =
+"Please select a star rating.";
+
+reviewFormMessage.style.color =
+"#c0392b";
+
+return;
+
+}
+
+reviewSubmitBtn.disabled = true;
+
+reviewSubmitBtn.textContent =
+"Submitting Review...";
+
+reviewFormMessage.textContent = "";
+
+try {
+
+const response = await fetch(
+BACKEND_URL + "/create-review",
+{
+
+method: "POST",
+
+headers: {
+"Content-Type": "application/json"
+},
+
+body: JSON.stringify({
+
+customer_name:
+reviewName.value.trim(),
+
+customer_email:
+reviewEmail.value.trim(),
+
+rating:
+selectedRating,
+
+review:
+reviewText.value.trim()
+
+})
+
+}
+);
+
+const result = await response.json();
+
+if (!response.ok || !result.success) {
+
+throw new Error(
+result.message ||
+"Unable to submit your review."
+);
+
+}
+
+reviewFormMessage.textContent =
+"Thank you! Your review has been submitted and will appear after approval.";
+
+reviewFormMessage.style.color =
+"#188038";
+
+reviewForm.reset();
+
+reviewRating.value = "";
+
+ratingStars.forEach(star => {
+
+star.classList.remove("active");
+
+});
+
+if (ratingMessage) {
+
+ratingMessage.textContent =
+"Tap a star to select your rating.";
+
+}
+
+if (reviewCharacterCount) {
+
+reviewCharacterCount.textContent = "0";
+
+}
+
+}
+catch (error) {
+
+console.error(
+"REVIEW SUBMISSION ERROR:",
+error
+);
+
+reviewFormMessage.textContent =
+error.message ||
+"Unable to submit your review.";
+
+reviewFormMessage.style.color =
+"#c0392b";
+
+}
+finally {
+
+reviewSubmitBtn.disabled = false;
+
+reviewSubmitBtn.textContent =
+"Submit Review";
+
+}
+
+}
+);
+
+}
+
+// ============================
+// CREATE REVIEW CARD
+// ============================
+
+function createReviewCard(review) {
+
+const card =
+document.createElement("article");
+
+card.className = "review-card";
+
+const stars =
+document.createElement("div");
+
+stars.className =
+"review-card-stars";
+
+stars.textContent =
+"★".repeat(review.rating) +
+"☆".repeat(5 - review.rating);
+
+const reviewContent =
+document.createElement("p");
+
+reviewContent.className =
+"review-card-text";
+
+reviewContent.textContent =
+review.review;
+
+const footer =
+document.createElement("div");
+
+footer.className =
+"review-card-footer";
+
+const guestName =
+document.createElement("span");
+
+guestName.className =
+"review-card-name";
+
+guestName.textContent =
+review.customer_name;
+
+const reviewDate =
+document.createElement("span");
+
+if (review.created_at) {
+
+reviewDate.textContent =
+new Date(
+review.created_at
+).toLocaleDateString(
+"en-IN",
+{
+day: "numeric",
+month: "short",
+year: "numeric"
+}
+);
+
+}
+
+footer.appendChild(guestName);
+
+footer.appendChild(reviewDate);
+
+card.appendChild(stars);
+
+card.appendChild(reviewContent);
+
+card.appendChild(footer);
+
+// Owner reply
+
+if (
+review.owner_reply &&
+String(review.owner_reply).trim()
+) {
+
+const ownerReply =
+document.createElement("div");
+
+ownerReply.className =
+"owner-reply";
+
+const ownerTitle =
+document.createElement("strong");
+
+ownerTitle.textContent =
+"Kaushalya Guest House";
+
+const ownerText =
+document.createElement("p");
+
+ownerText.textContent =
+review.owner_reply;
+
+ownerReply.appendChild(ownerTitle);
+
+ownerReply.appendChild(ownerText);
+
+card.appendChild(ownerReply);
+
+}
+
+return card;
+
+}
+
+// ============================
+// DISPLAY REVIEW SUMMARY
+// ============================
+
+function updateReviewSummary(reviews) {
+
+const totalReviews =
+reviews.length;
+
+if (totalReviews === 0) {
+
+averageRating.textContent = "New";
+
+averageStars.textContent = "☆☆☆☆☆";
+
+reviewCount.textContent =
+"Be the first guest to leave a review";
+
+return;
+
+}
+
+const totalRating =
+reviews.reduce(
+(total, review) =>
+total + Number(review.rating),
+0
+);
+
+const calculatedAverage =
+totalRating / totalReviews;
+
+averageRating.textContent =
+calculatedAverage.toFixed(1);
+
+const roundedAverage =
+Math.round(calculatedAverage);
+
+averageStars.textContent =
+"★".repeat(roundedAverage) +
+"☆".repeat(5 - roundedAverage);
+
+reviewCount.textContent =
+`Based on ${totalReviews} approved guest review${
+totalReviews === 1 ? "" : "s"
+}`;
+
+}
+
+// ============================
+// LOAD APPROVED REVIEWS
+// ============================
+
+async function loadApprovedReviews() {
+
+if (!reviewsContainer) {
+
+return;
+
+}
+
+try {
+
+const response = await fetch(
+BACKEND_URL + "/reviews"
+);
+
+const result = await response.json();
+
+if (!response.ok || !result.success) {
+
+throw new Error(
+result.message ||
+"Unable to load reviews."
+);
+
+}
+
+const reviews =
+Array.isArray(result.reviews)
+? result.reviews
+: [];
+
+reviewsContainer.innerHTML = "";
+
+updateReviewSummary(reviews);
+
+if (reviews.length === 0) {
+
+const emptyState =
+document.createElement("div");
+
+emptyState.className =
+"reviews-empty-state";
+
+const emptyIcon =
+document.createElement("span");
+
+emptyIcon.textContent = "⭐";
+
+const emptyText =
+document.createElement("p");
+
+emptyText.textContent =
+"Approved guest reviews will appear here.";
+
+emptyState.appendChild(emptyIcon);
+
+emptyState.appendChild(emptyText);
+
+reviewsContainer.appendChild(
+emptyState
+);
+
+return;
+
+}
+
+reviews.forEach(review => {
+
+reviewsContainer.appendChild(
+createReviewCard(review)
+);
+
+});
+
+}
+catch (error) {
+
+console.error(
+"LOAD REVIEWS ERROR:",
+error
+);
+
+reviewsContainer.innerHTML = "";
+
+const errorState =
+document.createElement("div");
+
+errorState.className =
+"reviews-empty-state";
+
+const errorText =
+document.createElement("p");
+
+errorText.textContent =
+"Guest reviews are temporarily unavailable.";
+
+errorState.appendChild(errorText);
+
+reviewsContainer.appendChild(
+errorState
+);
+
+}
+
+}
+
+loadApprovedReviews();
 // ============================
 // ADVANCE AMOUNT
 // ============================

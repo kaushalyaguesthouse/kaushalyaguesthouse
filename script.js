@@ -549,7 +549,63 @@ bookingBtn.innerHTML="Confirm Booking";
 }
 
 }
+// ============================
+// REVIEW STAR RATING
+// ============================
 
+const reviewRating =
+document.getElementById("reviewRating");
+
+const ratingMessage =
+document.getElementById("ratingMessage");
+
+const ratingStars =
+document.querySelectorAll(".rating-star");
+
+if (ratingStars.length > 0 && reviewRating) {
+
+  ratingStars.forEach((star) => {
+
+    star.addEventListener("click", () => {
+
+      const selectedRating =
+        Number(star.dataset.rating);
+
+      reviewRating.value =
+        String(selectedRating);
+
+      ratingStars.forEach((currentStar) => {
+
+        const currentRating =
+          Number(currentStar.dataset.rating);
+
+        const isSelected =
+          currentRating <= selectedRating;
+
+        currentStar.classList.toggle(
+          "active",
+          isSelected
+        );
+
+        currentStar.classList.toggle(
+          "selected",
+          isSelected
+        );
+
+      });
+
+      if (ratingMessage) {
+        ratingMessage.textContent =
+          `${selectedRating} star${
+            selectedRating === 1 ? "" : "s"
+          } selected`;
+      }
+
+    });
+
+  });
+
+}
 // ============================
 // ADVANCE AMOUNT
 // ============================

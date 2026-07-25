@@ -325,7 +325,7 @@ throw new Error("Unable to create order");
 
 const options={
 
-key:"rzp_live_THSQSxsz10dlWB",
+key:"rzp_live_THi2bJ8iWrIzYM",
 
 amount:order.amount,
 

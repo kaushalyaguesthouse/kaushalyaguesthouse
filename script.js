@@ -314,13 +314,12 @@ amount: roomPrice * 0.30
 
 );
 
-const order =
-await orderResponse.json();
+const order = await orderResponse.json();
 
-if(!order.success){
-
-throw new Error("Unable to create order");
-
+if (!orderResponse.ok || !order.success) {
+    throw new Error(
+        order.message || "Unable to create order"
+    );
 }
 
 const options={

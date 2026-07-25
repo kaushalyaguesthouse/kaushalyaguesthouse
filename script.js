@@ -11,9 +11,7 @@ if (typeof emailjs !== "undefined") {
     emailjs.init("XkkCrNFvEe1DQzBvG");
 }
 
-// ============================
-// BACKEND URL
-// ============================
+
 
 const BACKEND_URL = "https://kaushalya-backend.onrender.com";
 // ============================

@@ -1795,3 +1795,21 @@ body.dark .owner-reply {
     outline: none;
 }
 }
+/* Guest review star colour */
+
+button.rating-star {
+    color: #d6d9df !important;
+    -webkit-text-fill-color: #d6d9df !important;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+button.rating-star.active,
+button.rating-star.selected {
+    color: #f4b400 !important;
+    -webkit-text-fill-color: #f4b400 !important;
+}
+
+button.rating-star:focus {
+    outline: none;
+}

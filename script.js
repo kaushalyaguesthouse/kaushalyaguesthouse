@@ -631,9 +631,17 @@ ratingStars.forEach(currentStar => {
 const currentRating =
 Number(currentStar.dataset.rating);
 
+const isSelected =
+currentRating <= selectedRating;
+
 currentStar.classList.toggle(
 "active",
-currentRating <= selectedRating
+isSelected
+);
+
+currentStar.classList.toggle(
+"selected",
+isSelected
 );
 
 });

@@ -7,7 +7,9 @@
 // EMAILJS INITIALIZATION
 // ============================
 
-emailjs.init("XkkCrNFvEe1DQzBvG");
+if (typeof emailjs !== "undefined") {
+    emailjs.init("XkkCrNFvEe1DQzBvG");
+}
 
 // ============================
 // BACKEND URL

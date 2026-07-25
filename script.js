@@ -13,9 +13,7 @@ if (typeof emailjs !== "undefined") {
 
 
 
-const BACKEND_URL = "https://kaushalya-
-// ============================
-// DARK MODE
+const BACKEND_URL = "https://kaushalya-backend.onrender.com";
 // ============================
 
 const darkBtn = document.getElementById("darkBtn");

@@ -152,11 +152,76 @@ async function initBookings() {
 async function initBooking() {
   const id = new URLSearchParams(location.search).get("id");
   if (!id) return showError(new Error("No booking ID was provided."));
+  const assignmentSection = $("[data-assignment-section]"), assignmentContent = $("[data-assignment-content]");
+  const assignmentActions = $("[data-assignment-actions]"), assignmentError = $("[data-assignment-error]");
+  const modal = $("[data-room-modal]"), roomList = $("[data-room-list]"), roomError = $("[data-room-error]");
+  let booking;
+  const refreshBooking = async () => { const response = await AdminAuth.request(`/admin/bookings/${encodeURIComponent(id)}`); booking = response.booking || response.data || response; };
+  const toast = (message) => { const el = $("[data-success]"); el.textContent = message; el.hidden = false; window.setTimeout(() => { el.hidden = true; }, 5000); };
+  const setAssignmentLoading = (loading) => {
+    assignmentSection.setAttribute("aria-busy", String(loading));
+    assignmentActions.querySelectorAll("button").forEach((button) => { button.disabled = loading; });
+    if (loading) { assignmentError.hidden = true; assignmentContent.innerHTML = '<div class="assignment-skeleton"><span></span><span></span><span></span></div>'; }
+  };
+  const loadAssignment = async () => {
+    setAssignmentLoading(true);
+    try {
+      const response = await AdminAuth.request(`/admin/bookings/${encodeURIComponent(id)}/assignment`);
+      const model = normalizeAssignment(response);
+      assignmentContent.innerHTML = renderAssignment(model);
+      assignmentActions.innerHTML = model.current
+        ? '<button class="btn btn-danger btn-small" type="button" data-release-assignment>Release Assignment</button>'
+        : '<button class="btn btn-small" type="button" data-assign-room>Assign Room</button>';
+      assignmentError.hidden = true;
+    } catch (_) { assignmentContent.innerHTML = ""; assignmentActions.innerHTML = ""; assignmentError.hidden = false; }
+    finally { setAssignmentLoading(false); }
+  };
+  const openRooms = async () => {
+    modal.showModal(); roomError.hidden = true;
+    roomList.innerHTML = '<div class="room-loading" aria-label="Loading available rooms"><span class="spinner"></span><span>Loading rooms…</span></div>';
+    const bookingType = String(get(booking, "room_type", "room", "roomType") || "");
+    $("[data-room-modal-description]").textContent = bookingType ? `Rooms matching ${bookingType}` : "Choose an available room";
+    try {
+      const response = await AdminAuth.request("/admin/rooms/status");
+      const rooms = listFrom(response, ["rooms", "data", "items"]).filter((room) => sameRoomType(get(room, "room_type", "type", "roomType"), bookingType));
+      roomList.innerHTML = renderRooms(rooms);
+    } catch (_) {
+      roomList.innerHTML = '<div class="empty">Rooms could not be loaded. Please close this window and try again.</div>';
+      roomError.textContent = "Available rooms could not be loaded."; roomError.hidden = false;
+    }
+  };
+  const assignRoom = async (button) => {
+    modal.querySelectorAll("button").forEach((item) => { item.disabled = true; }); roomError.hidden = true;
+    try {
+      await AdminAuth.request(`/admin/bookings/${encodeURIComponent(id)}/assign-room`, { method: "POST", body: JSON.stringify({ room_id: button.dataset.roomId }) });
+      modal.close(); await refreshBooking(); await loadAssignment(); toast("Room assigned successfully.");
+    } catch (error) {
+      roomError.textContent = /ROOM_ASSIGNMENT_CONFLICT/.test(error.message) ? "This room is already assigned during the selected stay." : "The room could not be assigned. Please try again.";
+      roomError.hidden = false; modal.querySelectorAll("button").forEach((item) => { item.disabled = false; });
+    }
+  };
+  const releaseRoom = async (button) => {
+    if (!confirm("Release this room assignment?")) return;
+    button.disabled = true;
+    try {
+      await AdminAuth.request(`/admin/bookings/${encodeURIComponent(id)}/assign-room`, { method: "DELETE" });
+      await refreshBooking(); await loadAssignment(); toast("Assignment released.");
+    } catch (_) { showError(new Error("The assignment could not be released. Please try again.")); button.disabled = false; }
+  };
+  assignmentActions.addEventListener("click", (event) => {
+    const assign = event.target.closest("[data-assign-room]"), release = event.target.closest("[data-release-assignment]");
+    if (assign) openRooms(); if (release) releaseRoom(release);
+  });
+  roomList.addEventListener("click", (event) => { const button = event.target.closest("[data-room-id]"); if (button && !button.disabled) assignRoom(button); });
+  $("[data-close-room-modal]").addEventListener("click", () => modal.close());
+  modal.addEventListener("click", (event) => { if (event.target === modal) modal.close(); });
+  $("[data-assignment-retry]").addEventListener("click", loadAssignment);
   try {
     const data = await AdminAuth.request(`/admin/bookings/${encodeURIComponent(id)}`);
-    const booking = data.booking || data.data || data;
+    booking = data.booking || data.data || data;
     $("[data-booking-title]").textContent = `Booking ${get(booking, "booking_id", "uuid", "id") || "details"}`;
-    $("[data-fields]").innerHTML = Object.entries(booking).map(([key, value]) => `<div class="field"><dt>${escapeHtml(key.replace(/_/g, " "))}</dt><dd>${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}</dd></div>`).join("");
+    const privateFields = /(email|phone|mobile|special.?requests?|payment.?id|razorpay)/i;
+    $("[data-fields]").innerHTML = Object.entries(booking).filter(([key, value]) => !privateFields.test(key) && (value === null || typeof value !== "object")).map(([key, value]) => `<div class="field"><dt>${escapeHtml(key.replace(/_/g, " "))}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
     const current = get(booking, "booking_status", "status");
     $("[data-status-select]").value = current;
     $("[data-status-form]").addEventListener("submit", async (event) => {
@@ -169,8 +234,33 @@ async function initBooking() {
         $("[data-success]").textContent = "Booking status updated successfully."; $("[data-success]").hidden = false;
       } catch (error) { showError(error); } finally { button.disabled = false; }
     });
+    await loadAssignment();
   } catch (error) { showError(error); }
 }
+
+const sameRoomType = (left, right) => !right || String(left || "").trim().toLowerCase() === String(right).trim().toLowerCase();
+function normalizeAssignment(response = {}) {
+  const payload = response.data || response;
+  const candidate = payload.current_assignment || payload.assignment || payload.current || (get(payload, "room_number", "room_id") ? payload : null);
+  const current = candidate && !get(candidate, "released_at", "releasedAt") && String(get(candidate, "status") || "").toLowerCase() !== "released" ? candidate : null;
+  const history = listFrom(payload, ["history", "assignment_history", "assignments"]).slice().sort((a, b) => new Date(get(b, "assigned_at", "assignedAt") || 0) - new Date(get(a, "assigned_at", "assignedAt") || 0));
+  return { current, history };
+}
+function renderAssignment({ current, history }) {
+  const currentHtml = current ? `<dl class="assignment-details"><div><dt>Assigned room number</dt><dd>${escapeHtml(get(current, "room_number", "number", "room_no"))}</dd></div><div><dt>Room type</dt><dd>${escapeHtml(get(current, "room_type", "type"))}</dd></div><div><dt>Assignment status</dt><dd>${status(get(current, "status") || "Assigned")}</dd></div><div><dt>Assigned time</dt><dd>${dateTime(get(current, "assigned_at", "assignedAt"))}</dd></div></dl>` : '<p class="empty-assignment">No room assigned</p>';
+  const rows = history.length ? history.map((item) => `<tr><td><strong>${escapeHtml(get(item, "room_number", "number", "room_no"))}</strong></td><td>${dateTime(get(item, "assigned_at", "assignedAt"))}</td><td>${dateTime(get(item, "released_at", "releasedAt"))}</td><td>${status(get(item, "status") || (get(item, "released_at", "releasedAt") ? "Released" : "Assigned"))}</td></tr>`).join("") : emptyRow(4, "No assignment history yet.");
+  return `${currentHtml}<div class="assignment-history"><h3>Assignment History</h3><div class="table-scroll"><table><thead><tr><th>Room number</th><th>Assigned at</th><th>Released at</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function renderRooms(rooms) {
+  if (!rooms.length) return '<div class="empty">No matching rooms are available for this room type.</div>';
+  return rooms.map((room) => {
+    const derived = String(get(room, "derived_status", "derivedStatus", "status") || "unknown").toLowerCase();
+    const available = derived === "available", roomId = get(room, "uuid", "id", "room_id");
+    return `<article class="room-option ${available ? "" : "room-disabled"}"><div class="room-option-head"><strong>Room ${escapeHtml(get(room, "room_number", "number", "room_no"))}</strong>${status(derived)}</div><dl><div><dt>Room type</dt><dd>${escapeHtml(get(room, "room_type", "type", "roomType"))}</dd></div><div><dt>Derived status</dt><dd>${escapeHtml(derived)}</dd></div><div><dt>Housekeeping status</dt><dd>${escapeHtml(get(room, "housekeeping_status", "housekeepingStatus"))}</dd></div><div><dt>Operational status</dt><dd>${escapeHtml(get(room, "operational_status", "operationalStatus"))}</dd></div></dl><button class="btn btn-small" type="button" data-room-id="${escapeHtml(roomId)}" ${available ? "" : "disabled"}>${available ? "Select room" : "Unavailable"}</button></article>`;
+  }).join("");
+}
+
+if (typeof module !== "undefined") module.exports = { normalizeAssignment, renderAssignment, renderRooms, sameRoomType };
 
 async function initReviews() {
   try {

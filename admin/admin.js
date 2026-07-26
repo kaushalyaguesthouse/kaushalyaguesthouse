@@ -220,7 +220,7 @@ async function initBooking() {
     const data = await AdminAuth.request(`/admin/bookings/${encodeURIComponent(id)}`);
     booking = data.booking || data.data || data;
     $("[data-booking-title]").textContent = `Booking ${get(booking, "booking_id", "uuid", "id") || "details"}`;
-    const privateFields = /(email|phone|mobile|special.?requests?|payment.?id|razorpay)/i;
+    const privateFields = /(^id$|uuid|token|secret|password|email|phone|mobile|special.?requests?|payment.?id|razorpay|internal)/i;
     $("[data-fields]").innerHTML = Object.entries(booking).filter(([key, value]) => !privateFields.test(key) && (value === null || typeof value !== "object")).map(([key, value]) => `<div class="field"><dt>${escapeHtml(key.replace(/_/g, " "))}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
     const current = get(booking, "booking_status", "status");
     $("[data-status-select]").value = current;

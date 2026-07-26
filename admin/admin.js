@@ -89,7 +89,49 @@ async function initReviews() {
   } catch (error) { showError(error); }
 }
 
+const availabilityDays = (data) => listFrom(data, ["availability", "days", "data"]);
+const dayBookings = (day) => listFrom(day, ["bookings", "booking_details", "reservations"]);
+
+async function initAvailability() {
+  const monthSelect = $("[data-month]"), yearSelect = $("[data-year]"), roomTypeSelect = $("[data-room-type]");
+  const refreshButton = $("[data-refresh]"), calendar = $("[data-calendar]"), calendarSection = $("[data-calendar-section]");
+  const modal = $("[data-availability-modal]"), now = new Date();
+  monthSelect.innerHTML = Array.from({ length: 12 }, (_, index) => `<option value="${index + 1}">${new Intl.DateTimeFormat("en-IN", { month: "long" }).format(new Date(2020, index, 1))}</option>`).join("");
+  yearSelect.innerHTML = Array.from({ length: 11 }, (_, index) => now.getFullYear() - 5 + index).map((year) => `<option value="${year}">${year}</option>`).join("");
+  monthSelect.value = now.getMonth() + 1; yearSelect.value = now.getFullYear();
+
+  const renderModal = (day, dateValue) => {
+    const bookings = dayBookings(day);
+    $("[data-modal-title]").textContent = new Intl.DateTimeFormat("en-IN", { dateStyle: "full" }).format(dateValue);
+    $("[data-day-bookings]").innerHTML = bookings.length ? bookings.map((booking) => `<tr><td>${escapeHtml(get(booking, "booking_id", "id", "uuid"))}</td><td>${escapeHtml(get(booking, "room_type", "room"))}</td><td>${status(get(booking, "booking_status", "status"))}</td></tr>`).join("") : emptyRow(3, "No bookings for this day");
+    modal.showModal();
+  };
+  const load = async () => {
+    refreshButton.disabled = true; calendarSection.setAttribute("aria-busy", "true"); $("[data-error]").hidden = true;
+    calendar.innerHTML = '<p class="empty calendar-message">Loading availability…</p>';
+    try {
+      const params = new URLSearchParams({ month: monthSelect.value, year: yearSelect.value });
+      if (roomTypeSelect.value) params.set("room_type", roomTypeSelect.value);
+      const days = availabilityDays(await AdminAuth.request(`/admin/availability?${params}`));
+      const byDate = new Map(days.map((day) => { const raw = get(day, "date", "day"); return [/^\d+$/.test(String(raw)) ? Number(raw) : new Date(raw).getUTCDate(), day]; }));
+      const year = Number(yearSelect.value), month = Number(monthSelect.value), count = new Date(year, month, 0).getDate();
+      const blanks = Array.from({ length: new Date(year, month - 1, 1).getDay() }, () => '<span class="calendar-blank" aria-hidden="true"></span>');
+      const cells = Array.from({ length: count }, (_, index) => {
+        const number = index + 1, day = byDate.get(number) || {}, total = Number(get(day, "total_rooms", "total") || 0), booked = Number(get(day, "booked_rooms", "booked") || 0), available = Number(get(day, "available_rooms", "available") ?? Math.max(total - booked, 0));
+        const level = available <= 0 ? "full" : booked > 0 ? "partial" : "available";
+        return `<button class="calendar-day ${level}" type="button" data-day="${number}" aria-label="${number}: ${available} of ${total} rooms available"><strong>${number}</strong><dl><div><dt>Total</dt><dd>${total}</dd></div><div><dt>Booked</dt><dd>${booked}</dd></div><div><dt>Available</dt><dd>${available}</dd></div></dl></button>`;
+      });
+      calendar.innerHTML = [...blanks, ...cells].join("");
+      calendar.querySelectorAll("[data-day]").forEach((button) => button.addEventListener("click", () => renderModal(byDate.get(Number(button.dataset.day)) || {}, new Date(year, month - 1, Number(button.dataset.day)))));
+    } catch (error) { calendar.innerHTML = '<p class="empty calendar-message">Availability could not be loaded.</p>'; showError(error); }
+    finally { refreshButton.disabled = false; calendarSection.setAttribute("aria-busy", "false"); }
+  };
+  refreshButton.addEventListener("click", load); monthSelect.addEventListener("change", load); yearSelect.addEventListener("change", load); roomTypeSelect.addEventListener("change", load);
+  $("[data-close-modal]").addEventListener("click", () => modal.close()); modal.addEventListener("click", (event) => { if (event.target === modal) modal.close(); });
+  await load();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   if (document.body.dataset.page !== "login") AdminAuth.requireAuth();
-  ({ dashboard: initDashboard, bookings: initBookings, booking: initBooking, reviews: initReviews })[document.body.dataset.page]?.();
+  ({ dashboard: initDashboard, bookings: initBookings, booking: initBooking, reviews: initReviews, availability: initAvailability })[document.body.dataset.page]?.();
 });

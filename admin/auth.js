@@ -1,7 +1,7 @@
 "use strict";
 
 window.AdminAuth = (() => {
-  const API_BASE = "https://kaushalya-backend.onrender.com";
+  const API_BASE = window.KGH_CONFIG?.API_BASE_URL;
   const TOKEN_KEY = "kgh_admin_token";
   let token = sessionStorage.getItem(TOKEN_KEY);
 

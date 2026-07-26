@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <nav aria-label="Admin navigation">
       <a href="dashboard.html" ${page === "dashboard" ? 'aria-current="page"' : ""}><span>⌂</span> Dashboard</a>
       <a href="bookings.html" ${["bookings", "booking"].includes(page) ? 'aria-current="page"' : ""}><span>▣</span> Bookings</a>
+      <a href="availability.html" ${page === "availability" ? 'aria-current="page"' : ""}><span>▦</span> Availability</a>
       <a href="reviews.html" ${page === "reviews" ? 'aria-current="page"' : ""}><span>☆</span> Reviews</a>
     </nav>
     <button class="logout" data-logout><span>↪</span> Logout</button>`;

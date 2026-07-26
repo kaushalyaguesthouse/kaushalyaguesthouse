@@ -9,11 +9,11 @@ window.AdminAuth = (() => {
     const response = await fetch(`${API_BASE}/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bootstrap_key: bootstrapKey })
+      body: JSON.stringify({ bootstrapKey })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || data.message || "Unable to sign in.");
-    token = data.token || data.access_token;
+    token = data.accessToken;
     if (!token) throw new Error("The server did not return an access token.");
     sessionStorage.setItem(TOKEN_KEY, token);
     return data;

@@ -325,21 +325,29 @@ async function initHousekeeping() {
 
 if (typeof module !== "undefined") module.exports = { normalizeAssignment, renderAssignment, renderRooms, sameRoomType, housekeepingTasks, renderHousekeepingTask, housekeepingSkeletonRows };
 
+function createReviewRow(review) {
+  const row = document.createElement("tr"); row.dataset.review = String(get(review, "uuid", "id") || "");
+  const addCell = (value, className) => { const cell = document.createElement("td"); if (className) cell.className = className; cell.textContent = String(value ?? "—"); row.append(cell); return cell; };
+  addCell(get(review, "reviewer", "name")); addCell(review.email);
+  addCell(`★ ${Number(review.rating) || 0}`, "rating"); addCell(get(review, "review", "message", "text"), "review-copy"); addCell(date(get(review, "date", "created_at", "createdAt")));
+  const actionsCell = document.createElement("td"), actions = document.createElement("div"); actions.className = "actions";
+  [["approved", "Approve", "btn btn-small"], ["rejected", "Reject", "btn btn-small btn-danger"]].forEach(([moderation, label, className]) => { const button = document.createElement("button"); button.type = "button"; button.className = className; button.dataset.moderate = moderation; button.textContent = label; actions.append(button); });
+  actionsCell.append(actions); row.append(actionsCell); return row;
+}
 async function initReviews() {
+  const body = $("[data-reviews]"); if (!body) return;
   try {
-    const data = await AdminAuth.request("/admin/reviews");
-    const reviews = listFrom(data, ["reviews", "data"]);
-    $("[data-reviews]").innerHTML = reviews.length ? reviews.map((r) => {
-      const id = get(r, "uuid", "id");
-      return `<tr data-review="${escapeHtml(id)}"><td><strong>${escapeHtml(get(r, "reviewer", "name"))}</strong></td><td>${escapeHtml(r.email)}</td><td><span class="rating">★ ${escapeHtml(r.rating)}</span></td><td class="review-copy">${escapeHtml(get(r, "review", "message", "text"))}</td><td>${date(get(r, "date", "created_at", "createdAt"))}</td><td><div class="actions"><button class="btn btn-small" data-moderate="approved">Approve</button><button class="btn btn-small btn-danger" data-moderate="rejected">Reject</button></div></td></tr>`;
-    }).join("") : emptyRow(6, "No pending reviews");
-    $("[data-reviews]").addEventListener("click", async (event) => {
+    const data = await AdminAuth.request("/admin/reviews?status=pending"), reviews = listFrom(data, ["reviews", "data", "items"]);
+    body.replaceChildren();
+    if (reviews.length) reviews.forEach((review) => body.append(createReviewRow(review)));
+    else body.insertAdjacentHTML("beforeend", emptyRow(6, "No pending reviews"));
+    body.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-moderate]"); if (!button) return;
-      const row = button.closest("[data-review]"); button.disabled = true;
-      try { await AdminAuth.request(`/admin/reviews/${encodeURIComponent(row.dataset.review)}`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.moderate }) }); row.remove(); if (!$("[data-reviews]").children.length) $("[data-reviews]").innerHTML = emptyRow(6, "No pending reviews"); }
-      catch (error) { button.disabled = false; showError(error); }
+      const row = button.closest("[data-review]"); row.querySelectorAll("button").forEach((control) => { control.disabled = true; });
+      try { await AdminAuth.request(`/admin/reviews/${encodeURIComponent(row.dataset.review)}`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.moderate }) }); row.remove(); if (!body.children.length) body.insertAdjacentHTML("beforeend", emptyRow(6, "No pending reviews")); }
+      catch (error) { row.querySelectorAll("button").forEach((control) => { control.disabled = false; }); showError(error); }
     });
-  } catch (error) { showError(error); }
+  } catch (error) { body.innerHTML = emptyRow(6, "Reviews could not be loaded. Please try again."); showError(error); }
 }
 
 const availabilityDays = (data) => listFrom(data, ["availability", "days", "data"]);
@@ -385,6 +393,6 @@ async function initAvailability() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (document.body.dataset.page !== "login") AdminAuth.requireAuth();
+  if (document.body.dataset.page !== "login" && !AdminAuth.requireAuth()) return;
   ({ dashboard: initDashboard, bookings: initBookings, booking: initBooking, reviews: initReviews, availability: initAvailability, housekeeping: initHousekeeping })[document.body.dataset.page]?.();
 });

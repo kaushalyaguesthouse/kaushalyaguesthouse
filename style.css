@@ -148,6 +148,8 @@ body.dark .text-link { color: #e5bc71; }
 #ratingMessage { color: var(--muted); font-size: .68rem; }
 .form-message { min-height: 1.5em; margin: 10px 0; color: #9f302d; font-size: .78rem; }
 .form-message.success { color: #287044; }
+.field-error { display: block; min-height: 1.25em; margin-top: 4px; color: #9f302d; font-size: .75rem; }
+[aria-invalid="true"] { border-color: #9f302d !important; }
 .booking-section { background: var(--cream); }
 .booking-layout { display: grid; grid-template-columns: .78fr 1.22fr; gap: clamp(45px, 8vw, 100px); align-items: start; }
 .booking-intro { position: sticky; top: 120px; }

@@ -1,6 +1,6 @@
 "use strict";
 
-const BACKEND_URL = "https://kaushalya-backend.onrender.com";
+const { API_BASE_URL: BACKEND_URL, REQUEST_TIMEOUT_MS = 15000 } = window.KGH_CONFIG || {};
 const ROOM_PRICES = { "AC Room": 1500, "Non AC Room": 1200 };
 const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initRevealAnimations();
   document.getElementById("year").textContent = new Date().getFullYear();
 });
+
+window.addEventListener("pageshow", () => resetBookingButton());
 
 function initNavigation() {
   const header = document.querySelector(".site-header");
@@ -182,6 +184,41 @@ async function parseBackendResponse(response, fallbackMessage) {
   return data || {};
 }
 
+async function apiFetch(path, options = {}) {
+  if (!BACKEND_URL || !BACKEND_URL.startsWith("https://")) throw new Error("The booking service is not configured securely.");
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+  try {
+    return await fetch(`${BACKEND_URL}${path}`, { ...options, signal: controller ? controller.signal : options.signal });
+  } catch (error) {
+    if (error && error.name === "AbortError") throw new Error("The booking service took too long to respond. Please try again.");
+    throw new Error(navigator.onLine === false ? "You are offline. Reconnect and try again." : "The booking service could not be reached. Please try again.");
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function normalizeOrderResponse(payload) {
+  const envelope = payload && typeof payload === "object" ? payload : {};
+  const order = envelope.order && typeof envelope.order === "object" ? envelope.order : envelope.data?.order || envelope.data || envelope;
+  return {
+    success: envelope.success !== false,
+    orderId: order.order_id || order.id || envelope.order_id,
+    keyId: envelope.key_id || envelope.key || envelope.razorpay_key_id || envelope.data?.key_id || envelope.data?.key,
+    amount: Number(order.amount ?? envelope.amount),
+    currency: order.currency || envelope.currency || "INR"
+  };
+}
+
+function calculateBookingTotals(checkIn, checkOut, roomType) {
+  if (!checkIn || !checkOut || !ROOM_PRICES[roomType]) return null;
+  const nights = Math.round((localDate(checkOut) - localDate(checkIn)) / 86400000);
+  if (!Number.isInteger(nights) || nights < 1) return null;
+  const billableNights = nights - Math.floor(nights / 7);
+  const total = billableNights * ROOM_PRICES[roomType];
+  return { nights, billableNights, total, advance: Math.round(total * .3) };
+}
+
 function initBooking() {
   const form = document.getElementById("bookingForm");
   const checkin = document.getElementById("checkin");
@@ -193,13 +230,25 @@ function initBooking() {
   const dateString = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   checkin.min = dateString(today);
 
-  const totals = () => {
-    if (!checkin.value || !checkout.value) return null;
-    const nights = Math.round((localDate(checkout.value) - localDate(checkin.value)) / 86400000);
-    if (nights < 1) return null;
-    const billableNights = nights - Math.floor(nights / 7);
-    const total = billableNights * ROOM_PRICES[room.value];
-    return { nights, billableNights, total, advance: Math.round(total * .3) };
+  const totals = () => calculateBookingTotals(checkin.value, checkout.value, room.value);
+  const showFieldError = (field, text) => {
+    let error = field.parentElement.querySelector(".field-error");
+    if (!error) { error = document.createElement("small"); error.className = "field-error"; error.id = `${field.id}-error`; field.parentElement.append(error); field.setAttribute("aria-describedby", error.id); }
+    error.textContent = text;
+    field.setAttribute("aria-invalid", String(Boolean(text)));
+  };
+  const validateBooking = () => {
+    const rules = [
+      [document.getElementById("name"), document.getElementById("name").value.trim().length >= 2, "Enter your full name (at least 2 characters)."],
+      [document.getElementById("phone"), /^(?:\+91)?[6-9]\d{9}$/.test(document.getElementById("phone").value.replace(/[\s-]/g, "")), "Enter a valid 10-digit Indian mobile number."],
+      [document.getElementById("email"), document.getElementById("email").validity.valid && Boolean(document.getElementById("email").value.trim()), "Enter a valid email address."],
+      [checkin, Boolean(checkin.value) && checkin.value >= dateString(new Date()), "Choose today or a future check-in date."],
+      [checkout, Boolean(totals()), "Check-out must be after check-in."],
+      [document.getElementById("adults"), Number.isInteger(Number(document.getElementById("adults").value)) && Number(document.getElementById("adults").value) >= 1 && Number(document.getElementById("adults").value) <= 6, "Choose between 1 and 6 adults."],
+      [document.getElementById("children"), Number.isInteger(Number(document.getElementById("children").value)) && Number(document.getElementById("children").value) >= 0 && Number(document.getElementById("children").value) <= 4, "Choose between 0 and 4 children."]
+    ];
+    rules.forEach(([field, valid, text]) => showFieldError(field, valid ? "" : text));
+    return rules.every(([, valid]) => valid);
   };
   const updatePrice = () => {
     const cost = totals();
@@ -232,7 +281,7 @@ function initBooking() {
     message.className = "form-message";
     message.replaceChildren();
     const cost = totals();
-    if (!form.checkValidity()) { form.reportValidity(); message.textContent = "Please complete all required fields correctly."; return; }
+    if (!validateBooking() || !form.checkValidity()) { form.reportValidity(); message.textContent = "Please correct the highlighted booking details."; form.querySelector('[aria-invalid="true"]')?.focus(); return; }
     if (!cost) { message.textContent = "Check-out must be at least one day after check-in."; checkout.focus(); return; }
     const paymentMethod = form.querySelector('input[name="payment_method"]:checked').value;
     const data = {
@@ -246,29 +295,31 @@ function initBooking() {
     isSubmitting = true;
     button.disabled = true;
     button.textContent = "Please wait…";
+    let checkoutOpened = false;
     try {
       if (paymentMethod === "later") {
         await createBooking(data, cost, idempotencyKey);
       } else {
-        await startOnlinePayment(data, cost, idempotencyKey);
-        return;
+        checkoutOpened = await startOnlinePayment(data, cost, idempotencyKey);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Booking request failed:", error && error.message ? error.message : "Unknown error");
+      endBookingSubmission(false);
       message.textContent = error.message || "We could not complete the booking. Please try again or call us.";
     } finally {
-      if (paymentMethod === "later") resetBookingButton();
+      if (paymentMethod === "later" || !checkoutOpened) resetBookingButton();
     }
   });
 }
 
 async function startOnlinePayment(data, cost, idempotencyKey) {
   if (!window.Razorpay) throw new Error("The secure payment service is unavailable. Please choose pay at hotel or try again.");
-  const response = await fetch(`${BACKEND_URL}/create-order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: cost.advance }) });
-  const order = await parseBackendResponse(response, "Unable to start secure payment. Please try again.");
-  if (!order.success || !order.order_id) throw new Error("Unable to start secure payment. Please try again.");
+  if (!Number.isSafeInteger(cost.advance) || cost.advance < 1) throw new Error("The payment amount is invalid. Please reselect your dates.");
+  const response = await apiFetch("/create-order", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ amount: cost.advance }) });
+  const order = normalizeOrderResponse(await parseBackendResponse(response, "Unable to start secure payment. Please try again."));
+  if (!order.success || !order.orderId || !order.keyId || !Number.isSafeInteger(order.amount) || order.amount < 1) throw new Error("The payment service returned an invalid order. Please try again.");
   const razorpay = new window.Razorpay({
-    key: order.key_id, amount: order.amount, currency: "INR", order_id: order.order_id, name: "Kaushalya Guest House", description: `30% advance for ${cost.nights}-night stay`, prefill: { name: data.customer_name, email: data.email, contact: data.phone }, theme: { color: "#102b28" },
+    key: order.keyId, amount: order.amount, currency: order.currency, order_id: order.orderId, name: "Kaushalya Guest House", description: `30% advance for ${cost.nights}-night stay`, prefill: { name: data.customer_name, email: data.email, contact: data.phone }, theme: { color: "#102b28" },
     handler: async (payment) => {
       const message = document.getElementById("bookingMessage");
       try {
@@ -276,7 +327,7 @@ async function startOnlinePayment(data, cost, idempotencyKey) {
         const bookingData = { ...data, razorpay_order_id: payment.razorpay_order_id, razorpay_payment_id: payment.razorpay_payment_id, razorpay_signature: payment.razorpay_signature };
         await createBooking(bookingData, cost, idempotencyKey);
       } catch (error) {
-        console.error(error);
+        console.error("Payment completion failed:", error && error.message ? error.message : "Unknown error");
         if (error.bookingFinalizationFailed) {
           message.className = "form-message";
           message.textContent = `Payment was received, but booking confirmation is pending. Please contact support and provide Razorpay payment ID ${payment.razorpay_payment_id}. Do not make another payment.`;
@@ -288,19 +339,20 @@ async function startOnlinePayment(data, cost, idempotencyKey) {
         resetBookingButton();
       }
     },
-    modal: { ondismiss: () => { endBookingSubmission(false); resetBookingButton(); } }
+    modal: { escape: true, confirm_close: true, ondismiss: () => { document.getElementById("bookingMessage").textContent = "Payment cancelled. No booking was created; you can safely try again."; endBookingSubmission(false); resetBookingButton(); } }
   });
   razorpay.on("payment.failed", () => { document.getElementById("bookingMessage").textContent = "Payment failed. No booking was created; please try again."; endBookingSubmission(false); resetBookingButton(); });
   razorpay.open();
+  return true;
 }
 
 async function verifyRazorpayPayment(paymentData) {
-  const response = await fetch(`${BACKEND_URL}/verify-payment`, {
+  const response = await apiFetch("/verify-payment", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ razorpay_order_id: paymentData.razorpay_order_id, razorpay_payment_id: paymentData.razorpay_payment_id, razorpay_signature: paymentData.razorpay_signature })
   });
   const result = await parseBackendResponse(response, "Payment verification failed. No booking was created. Please contact support before trying again.");
-  if (!result.success) throw new Error("Payment verification failed. No booking was created. Please contact support before trying again.");
+  if (!(result.success === true || result.verified === true || result.data?.verified === true)) throw new Error("Payment verification failed. No booking was created. Please contact support before trying again.");
   return result;
 }
 
@@ -312,11 +364,13 @@ function resetBookingButton() {
 }
 
 async function createBooking(data, cost, idempotencyKey) {
-  const response = await fetch(`${BACKEND_URL}/create-booking`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body: JSON.stringify(data) });
+  const response = await apiFetch("/create-booking", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body: JSON.stringify(data) });
   let result;
   try {
     result = await parseBackendResponse(response, "Booking could not be created. Please try again or contact support.");
-    if (!result.success || !result.booking_id) throw new Error("Booking could not be created. Please try again or contact support.");
+    const booking = result.booking && typeof result.booking === "object" ? result.booking : result.data?.booking || result.data || result;
+    result = { ...result, booking_id: booking.booking_id || booking.id || result.booking_id };
+    if (result.success === false || !result.booking_id) throw new Error("Booking could not be created. Please try again or contact support.");
   } catch (error) {
     if (data.razorpay_payment_id) error.bookingFinalizationFailed = true;
     throw error;
@@ -365,7 +419,7 @@ function initReviews() {
     button.disabled = true;
     button.textContent = "Submitting…";
     try {
-      const response = await fetch(`${BACKEND_URL}/create-review`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const response = await apiFetch("/create-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const result = await parseBackendResponse(response, "Your review could not be submitted. Please try again.");
       if (result.success === false) throw new Error("Your review could not be submitted. Please try again.");
       form.reset(); setRating(0); document.getElementById("reviewCharacterCount").textContent = "0";
@@ -385,7 +439,7 @@ function initReviews() {
 async function loadReviews() {
   const container = document.getElementById("reviewsContainer");
   try {
-    const response = await fetch(`${BACKEND_URL}/reviews`);
+    const response = await apiFetch("/reviews");
     const result = await parseBackendResponse(response, "Guest reviews are temporarily unavailable.");
     const reviews = Array.isArray(result) ? result : (Array.isArray(result.reviews) ? result.reviews : []);
     container.replaceChildren();
@@ -421,3 +475,6 @@ function initRevealAnimations() {
   const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add("visible"); observer.unobserve(entry.target); } }), { threshold: .12 });
   elements.forEach((element) => { element.classList.add("reveal"); observer.observe(element); });
 }
+
+// Small, side-effect-free surface used by the production regression suite.
+window.KGH_TEST = Object.freeze({ calculateBookingTotals, normalizeOrderResponse });

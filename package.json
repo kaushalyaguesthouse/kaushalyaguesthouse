@@ -1,0 +1,8 @@
+{
+  "name": "kaushalya-guest-house-frontend",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check admin/admin.js && node --check admin/auth.js && node --check admin/sidebar.js"
+  }
+}

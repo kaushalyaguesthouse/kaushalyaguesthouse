@@ -18,18 +18,86 @@ function bookingRows(bookings) {
 }
 
 async function initDashboard() {
-  try {
-    const [bookingData, reviewData] = await Promise.all([AdminAuth.request("/admin/bookings?limit=500"), AdminAuth.request("/admin/reviews")]);
-    const bookings = listFrom(bookingData, ["bookings", "data"]), reviews = listFrom(reviewData, ["reviews", "data"]);
-    const recent = [...bookings].sort((a, b) => new Date(get(b, "created_at", "createdAt")) - new Date(get(a, "created_at", "createdAt"))).slice(0, 5);
-    $("[data-recent-bookings]").innerHTML = recent.length ? bookingRows(recent) : emptyRow(14, "No recent bookings");
-    $("[data-booking-count]").textContent = bookings.length;
-    $("[data-review-count]").textContent = reviews.length;
-    renderSummary("[data-booking-summary]", bookings, (b) => get(b, "booking_status", "status"));
-    renderSummary("[data-payment-summary]", bookings, (b) => get(b, "payment_status") || "Unknown");
-    const activity = recent.map((b) => `<li><span class="activity-dot"></span><div><strong>Booking ${escapeHtml(get(b, "booking_id", "uuid", "id"))}</strong><small>${escapeHtml(get(b, "customer", "name", "full_name", "customer_name"))} · ${dateTime(get(b, "created_at", "createdAt"))}</small></div></li>`).join("");
-    $("[data-activity]").innerHTML = activity || "<li>No recent activity</li>";
-  } catch (error) { showError(error); }
+  const charts = [];
+  const value = (object, ...keys) => get(object || {}, ...keys);
+  const number = (raw) => Number.isFinite(Number(raw)) ? Number(raw) : 0;
+  const array = (object, ...keys) => listFrom(object || {}, keys);
+  const formatCount = (raw) => new Intl.NumberFormat("en-IN").format(number(raw));
+  const percent = (raw) => `${number(raw).toLocaleString("en-IN", { maximumFractionDigits: 1 })}%`;
+  const metricCard = (label, raw, formatter = formatCount) => `<article class="card metric-card"><p>${escapeHtml(label)}</p><strong>${formatter(raw)}</strong></article>`;
+  const periodNames = { today: "Today", current_week: "Current week", week: "Current week", current_month: "Current month", month: "Current month", current_year: "Current year", year: "Current year" };
+  const renderChart = (canvasSelector, emptySelector, type, labels, datasets) => {
+    const canvas = $(canvasSelector), empty = $(emptySelector);
+    const hasData = labels.length && datasets.some((set) => set.data.some((item) => number(item) !== 0));
+    canvas.hidden = !hasData; empty.hidden = Boolean(hasData);
+    if (!hasData || typeof Chart === "undefined") { if (typeof Chart === "undefined") empty.textContent = "Charts are temporarily unavailable."; return; }
+    charts.push(new Chart(canvas, { type, data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { usePointStyle: true } } }, scales: type === "doughnut" ? {} : { y: { beginAtZero: true } } } }));
+  };
+  const load = async () => {
+    const button = $("[data-analytics-refresh]"), loading = $("[data-analytics-loading]"), content = $("[data-analytics-content]"), empty = $("[data-analytics-empty]"), error = $("[data-error]");
+    button.disabled = true; loading.hidden = false; content.hidden = true; empty.hidden = true; error.hidden = true;
+    charts.splice(0).forEach((chart) => chart.destroy());
+    try {
+      const response = await AdminAuth.request("/admin/analytics/summary");
+      const data = response?.data || response?.summary || response || {};
+      const overview = data.overview || data.snapshot || data.metrics || {};
+      const revenue = data.revenue_summary || data.revenue || {};
+      const trends = data.trends || data.charts || {};
+      let trend = array(data, "daily_trend", "trend", "daily");
+      if (!trend.length) trend = array(trends, "daily_trend", "default_30_day_trend", "daily");
+      const roomBookings = value(data, "bookings_by_room_type", "room_type_bookings") || value(trends, "bookings_by_room_type", "room_type_bookings") || [];
+      const statuses = value(data, "booking_status_distribution", "bookings_by_status", "status_distribution") || value(trends, "booking_status_distribution", "bookings_by_status") || [];
+      const occupancy = array(data, "occupancy_by_room_type", "room_type_occupancy");
+      const payments = data.payment_statistics || data.payments || {};
+      const hasAnalytics = Object.keys(overview).length || Object.keys(revenue).length || Object.keys(trends).length || trend.length || Object.keys(roomBookings).length || Object.keys(statuses).length || occupancy.length || Object.keys(payments).length;
+      $("[data-generated-at]").textContent = dateTime(value(data, "generated_at", "generatedAt", "last_generated_at"));
+      $("[data-timezone]").textContent = escapeHtml(value(data, "timezone", "effective_timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+      if (!hasAnalytics) { empty.hidden = false; return; }
+      $("[data-overview-cards]").innerHTML = [
+        ["Today’s bookings", value(overview, "todays_bookings", "today_bookings", "bookings_today")],
+        ["Verified online collections today", value(overview, "verified_online_collections_today", "online_collections_today"), money],
+        ["Current guests", value(overview, "current_guests", "guests_in_house")], ["Rooms occupied", value(overview, "rooms_occupied", "occupied_rooms")],
+        ["Available rooms", value(overview, "available_rooms", "rooms_available")], ["Occupancy percentage", value(overview, "occupancy_percentage", "occupancy_percent"), percent],
+        ["Gross booked value this month", value(overview, "gross_booked_value_this_month", "monthly_gross_booked_value"), money]
+      ].map(([label, raw, formatter]) => metricCard(label, raw, formatter)).join("");
+      const periods = ["today", "current_week", "current_month", "current_year"];
+      $("[data-revenue-cards]").innerHTML = periods.map((key) => {
+        const item = revenue[key] || revenue[key.replace("current_", "")] || {};
+        return `<article class="card revenue-card"><h3>${periodNames[key]}</h3><dl><div><dt>Verified online collections</dt><dd>${money(value(item, "verified_online_collections", "verified_online_amount", "online_collections"))}</dd></div><div><dt>Gross booked value</dt><dd>${money(value(item, "gross_booked_value", "booked_value"))}</dd></div></dl></article>`;
+      }).join("");
+      const grossSeries = array(trends, "daily_gross_booked_value", "gross_booked_value");
+      const verifiedSeries = array(trends, "daily_verified_online_collections", "verified_online_collections");
+      const bookingSeries = array(trends, "daily_booking_count", "booking_count");
+      if (!trend.length && (grossSeries.length || verifiedSeries.length || bookingSeries.length)) {
+        const indexed = new Map();
+        [[grossSeries, "gross_booked_value"], [verifiedSeries, "verified_online_collections"], [bookingSeries, "booking_count"]].forEach(([series, key]) => series.forEach((item) => {
+          const day = value(item, "date", "day", "label");
+          indexed.set(day, { ...(indexed.get(day) || { date: day }), [key]: value(item, "value", "amount", "count", key) });
+        }));
+        trend = [...indexed.values()].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      }
+      const dates = trend.map((item) => value(item, "date", "day", "label"));
+      renderChart("[data-value-chart]", "[data-value-chart-empty]", "line", dates, [
+        { label: "Gross booked value", data: trend.map((item) => number(value(item, "gross_booked_value", "booked_value"))), borderColor: "#c99b54", backgroundColor: "#c99b5430", tension: .25 },
+        { label: "Verified online collections", data: trend.map((item) => number(value(item, "verified_online_collections", "verified_online_amount", "online_collections"))), borderColor: "#174d3a", backgroundColor: "#174d3a30", tension: .25 }
+      ]);
+      renderChart("[data-bookings-chart]", "[data-bookings-chart-empty]", "bar", dates, [{ label: "Bookings", data: trend.map((item) => number(value(item, "booking_count", "bookings"))), backgroundColor: "#4c9a78" }]);
+      const normalizeDistribution = (items) => Array.isArray(items) ? items : Object.entries(items || {}).map(([label, count]) => ({ label, count }));
+      const roomData = normalizeDistribution(roomBookings), statusData = normalizeDistribution(statuses);
+      const palette = ["#174d3a", "#c99b54", "#4c9a78", "#74877e", "#d17a5b", "#725a8d"];
+      renderChart("[data-room-chart]", "[data-room-chart-empty]", "doughnut", roomData.map((item) => value(item, "room_type", "label", "name")), [{ label: "Bookings", data: roomData.map((item) => number(value(item, "booking_count", "count", "value"))), backgroundColor: palette }]);
+      renderChart("[data-status-chart]", "[data-status-chart-empty]", "doughnut", statusData.map((item) => value(item, "status", "booking_status", "label", "name")), [{ label: "Bookings", data: statusData.map((item) => number(value(item, "booking_count", "count", "value"))), backgroundColor: palette }]);
+      $("[data-occupancy-rows]").innerHTML = occupancy.length ? occupancy.map((item) => `<tr><td><strong>${escapeHtml(value(item, "room_type", "name"))}</strong></td><td>${formatCount(value(item, "occupied_rooms", "occupied"))}</td><td>${formatCount(value(item, "blocked_rooms", "blocked"))}</td><td>${formatCount(value(item, "available_rooms", "available"))}</td><td>${formatCount(value(item, "total_rooms", "total"))}</td><td><strong>${percent(value(item, "occupancy_percentage", "occupancy_percent"))}</strong></td></tr>`).join("") : emptyRow(6, "No occupancy data available.");
+      $("[data-payment-cards]").innerHTML = [
+        ["Verified online amount", value(payments, "verified_online_amount", "verified_online_collections")], ["Expected pay-at-hotel amount", value(payments, "expected_pay_at_hotel_amount", "pay_at_hotel_expected")],
+        ["Pending payment amount", value(payments, "pending_payment_amount", "pending_amount")], ["Completed bookings with unrecorded balance", value(payments, "completed_bookings_with_unrecorded_balance", "unrecorded_balance")]
+      ].map(([label, raw]) => metricCard(label, raw, money)).join("");
+      content.hidden = false;
+    } catch (loadError) { showError(loadError); }
+    finally { loading.hidden = true; button.disabled = false; }
+  };
+  $("[data-analytics-refresh]").addEventListener("click", load);
+  await load();
 }
 
 function renderSummary(selector, items, getter) {

@@ -1,1 +1,41 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Dashboard · Kaushalya Admin</title><link rel="stylesheet" href="admin.css"></head><body data-page="dashboard"><aside class="sidebar" data-sidebar></aside><div class="overlay" data-overlay></div><div class="app"><header class="topbar"><div class="topbar-actions"><button class="icon-btn menu-btn" data-menu aria-label="Open menu">☰</button><span class="topbar-title">Hotel Administration</span></div><div class="topbar-actions"><button class="icon-btn" data-theme aria-label="Toggle dark mode">◐</button><span class="admin-badge">A</span></div></header><main class="content"><div class="page-head"><div><p class="eyebrow">Operations overview</p><h1>Dashboard</h1><p>A clear view of the latest hotel activity.</p></div></div><div class="notice" data-error hidden role="alert"></div><section class="stat-grid" aria-label="Recent data metrics"><article class="card"><div class="card-head"><h2>Recent Bookings</h2><span class="label">Recent Data</span></div><div class="metric" data-booking-count>—</div><div class="metric-label">records available from the bookings API</div></article><article class="card"><div class="card-head"><h2>Pending Reviews</h2><span class="label">Recent Data</span></div><div class="metric" data-review-count>—</div><div class="metric-label">reviews awaiting moderation</div></article></section><div class="cards" style="margin-top:20px"><article class="card"><div class="card-head"><h2>Booking Status Summary</h2><span class="label">Recent Data</span></div><div data-booking-summary></div></article><article class="card"><div class="card-head"><h2>Payment Status Summary</h2><span class="label">Recent Data</span></div><div data-payment-summary></div></article><article class="card"><div class="card-head"><h2>Recent Activity</h2><span class="label">Recent Data</span></div><ul class="activity" data-activity></ul></article><article class="card card-wide"><div class="card-head"><h2>Latest Bookings</h2><a class="id-link" href="bookings.html">View all →</a></div><div class="table-scroll"><table><thead><tr><th>Booking ID</th><th>Customer</th><th>Phone</th><th>Email</th><th>Room</th><th>Check In</th><th>Check Out</th><th>Guests</th><th>Payment Type</th><th>Payment Status</th><th>Booking Status</th><th>Amount</th><th>Advance</th><th>Created At</th></tr></thead><tbody data-recent-bookings><tr><td colspan="14" class="empty">Loading recent data…</td></tr></tbody></table></div></article></div></main></div><script src="auth.js"></script><script src="sidebar.js"></script><script src="admin.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Analytics Dashboard · Kaushalya Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-page="dashboard">
+  <aside class="sidebar" data-sidebar></aside><div class="overlay" data-overlay></div>
+  <div class="app">
+    <header class="topbar"><div class="topbar-actions"><button class="icon-btn menu-btn" data-menu aria-label="Open menu">☰</button><span class="topbar-title">Hotel Administration</span></div><div class="topbar-actions"><button class="icon-btn" data-theme aria-label="Toggle dark mode">◐</button><span class="admin-badge">A</span></div></header>
+    <main class="content analytics-dashboard">
+      <div class="page-head">
+        <div><p class="eyebrow">Aggregate property performance</p><h1>Analytics Dashboard</h1><p>Bookings, occupancy, and payment insights without guest-level information.</p></div>
+        <button class="btn refresh-btn" type="button" data-analytics-refresh><span aria-hidden="true">↻</span> Refresh</button>
+      </div>
+      <div class="notice" data-error hidden role="alert"></div>
+      <div class="analytics-meta" aria-live="polite"><span><strong>Last generated:</strong> <span data-generated-at>—</span></span><span><strong>Effective timezone:</strong> <span data-timezone>—</span></span></div>
+
+      <div data-analytics-loading class="analytics-loading" role="status"><span class="spinner" aria-hidden="true"></span><span>Loading analytics…</span></div>
+      <div data-analytics-empty class="empty-state card" hidden><strong>No analytics available</strong><p>There is no aggregate data to show for this period.</p></div>
+
+      <div data-analytics-content hidden>
+        <section aria-labelledby="snapshot-title"><div class="section-head"><div><p class="eyebrow">Today &amp; this month</p><h2 id="snapshot-title">Property snapshot</h2></div></div><div class="analytics-stat-grid" data-overview-cards></div></section>
+
+        <section aria-labelledby="revenue-title"><div class="section-head"><div><p class="eyebrow">Financial summary</p><h2 id="revenue-title">Revenue overview</h2></div><p>Verified collections and booked value are reported separately.</p></div><div class="revenue-grid" data-revenue-cards></div></section>
+
+        <section aria-labelledby="trends-title"><div class="section-head"><div><p class="eyebrow">Default 30-day trend</p><h2 id="trends-title">Daily performance</h2></div></div><div class="chart-grid"><article class="card chart-card card-wide"><div class="card-head"><h3>Daily value trend</h3><span class="label">30 days</span></div><div class="chart-wrap"><canvas data-value-chart aria-label="Daily gross booked value and verified online collections chart" role="img"></canvas><div class="chart-empty" data-value-chart-empty hidden>No daily value data available.</div></div></article><article class="card chart-card card-wide"><div class="card-head"><h3>Daily booking count</h3><span class="label">30 days</span></div><div class="chart-wrap"><canvas data-bookings-chart aria-label="Daily booking count chart" role="img"></canvas><div class="chart-empty" data-bookings-chart-empty hidden>No daily booking data available.</div></div></article></div></section>
+
+        <section aria-labelledby="distribution-title"><div class="section-head"><div><p class="eyebrow">Booking mix</p><h2 id="distribution-title">Booking distribution</h2></div></div><div class="chart-grid"><article class="card chart-card"><div class="card-head"><h3>Bookings by room type</h3></div><div class="chart-wrap chart-wrap-small"><canvas data-room-chart aria-label="Bookings by room type chart" role="img"></canvas><div class="chart-empty" data-room-chart-empty hidden>No room type data available.</div></div></article><article class="card chart-card"><div class="card-head"><h3>Booking status distribution</h3></div><div class="chart-wrap chart-wrap-small"><canvas data-status-chart aria-label="Booking status distribution chart" role="img"></canvas><div class="chart-empty" data-status-chart-empty hidden>No booking status data available.</div></div></article></div></section>
+
+        <section aria-labelledby="occupancy-title"><div class="section-head"><div><p class="eyebrow">Room inventory</p><h2 id="occupancy-title">Occupancy by room type</h2></div></div><div class="table-card"><div class="table-scroll"><table><thead><tr><th>Room type</th><th>Occupied rooms</th><th>Blocked rooms</th><th>Available rooms</th><th>Total rooms</th><th>Occupancy</th></tr></thead><tbody data-occupancy-rows></tbody></table></div></div></section>
+
+        <section aria-labelledby="payments-title"><div class="section-head"><div><p class="eyebrow">Payment position</p><h2 id="payments-title">Payment statistics</h2></div></div><div class="payment-grid" data-payment-cards></div><div class="info-note" role="note"><strong>About pay-at-hotel values</strong><span>Pay-at-hotel collections are not currently recorded. These values are expected balances, not confirmed collections.</span></div></section>
+      </div>
+    </main>
+  </div>
+  <script src="auth.js"></script><script src="sidebar.js"></script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script src="admin.js"></script>
+</body></html>

@@ -16,7 +16,7 @@ Then open `http://localhost:8000`.
 
 - Booking requests use the existing hosted booking service.
 - Online advance payments use Razorpay Checkout through that booking service.
-- Confirmation emails use EmailJS when its browser SDK is available.
-- Successful booking requests open a pre-filled WhatsApp message.
+- The backend sends transactional booking confirmation emails.
+- Successful bookings offer an optional pre-filled WhatsApp message.
 
 The website remains usable as a static page if a third-party script is temporarily unavailable, but booking submission and payment require their respective remote services.

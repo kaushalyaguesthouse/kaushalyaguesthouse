@@ -40,13 +40,45 @@ function renderSummary(selector, items, getter) {
 const emptyRow = (span, message) => `<tr><td colspan="${span}" class="empty">${message}</td></tr>`;
 
 async function initBookings() {
-  try {
-    const data = await AdminAuth.request("/admin/bookings?limit=500");
-    const bookings = listFrom(data, ["bookings", "data"]);
-    $("[data-bookings]").innerHTML = bookings.length ? bookingRows(bookings) : emptyRow(14, "No bookings found");
-    $("[data-total]").textContent = `${bookings.length} recent record${bookings.length === 1 ? "" : "s"}`;
-    document.querySelectorAll("tr[data-href]").forEach((row) => row.addEventListener("click", (e) => { if (!e.target.closest("a")) location.href = row.dataset.href; }));
-  } catch (error) { showError(error); }
+  const form = $("[data-booking-filters]"), tableBody = $("[data-bookings]"), section = $("[data-bookings-section]");
+  const previous = $("[data-previous-page]"), next = $("[data-next-page]"), indicator = $("[data-page-indicator]");
+  const apply = $("[data-apply-filters]"), errorNotice = $("[data-error]");
+  const state = { page: 1, limit: 25, hasNext: false };
+
+  const load = async () => {
+    const params = new URLSearchParams({ page: String(state.page), limit: String(state.limit) });
+    new FormData(form).forEach((value, key) => { if (String(value).trim()) params.set(key, String(value).trim()); });
+    tableBody.innerHTML = emptyRow(14, "Loading bookings…");
+    section.setAttribute("aria-busy", "true"); apply.disabled = true; previous.disabled = true; next.disabled = true;
+    errorNotice.hidden = true;
+    try {
+      const response = await AdminAuth.request(`/admin/bookings?${params.toString()}`);
+      const bookings = Array.isArray(response?.items) ? response.items : (Array.isArray(response?.bookings) ? response.bookings : []);
+      const pagination = response?.pagination || {};
+      const currentPage = Number(pagination.page ?? pagination.current_page ?? state.page) || state.page;
+      const total = Number(pagination.total ?? pagination.total_items ?? bookings.length);
+      state.page = currentPage;
+      state.hasNext = pagination.has_next === true;
+      tableBody.innerHTML = bookings.length ? bookingRows(bookings) : emptyRow(14, "No bookings match your filters.");
+      $("[data-total]").textContent = `${total} result${total === 1 ? "" : "s"}`;
+      indicator.textContent = `Page ${currentPage}`;
+      previous.disabled = currentPage <= 1;
+      next.disabled = !state.hasNext;
+      tableBody.querySelectorAll("tr[data-href]").forEach((row) => row.addEventListener("click", (event) => { if (!event.target.closest("a")) location.href = row.dataset.href; }));
+    } catch (error) {
+      tableBody.innerHTML = emptyRow(14, "Bookings could not be loaded. Please try again.");
+      $("[data-total]").textContent = "Unable to load results";
+      showError(error);
+    } finally { section.setAttribute("aria-busy", "false"); apply.disabled = false; }
+  };
+
+  form.addEventListener("change", () => { state.page = 1; });
+  form.addEventListener("input", () => { state.page = 1; });
+  form.addEventListener("submit", (event) => { event.preventDefault(); state.page = 1; load(); });
+  $("[data-clear-filters]").addEventListener("click", () => { form.reset(); state.page = 1; load(); });
+  previous.addEventListener("click", () => { if (state.page > 1) { state.page -= 1; load(); } });
+  next.addEventListener("click", () => { if (state.hasNext) { state.page += 1; load(); } });
+  await load();
 }
 
 async function initBooking() {

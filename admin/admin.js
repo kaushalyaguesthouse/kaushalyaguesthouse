@@ -260,7 +260,70 @@ function renderRooms(rooms) {
   }).join("");
 }
 
-if (typeof module !== "undefined") module.exports = { normalizeAssignment, renderAssignment, renderRooms, sameRoomType };
+const housekeepingValue = (task, ...keys) => get(task, ...keys);
+const housekeepingStatus = (task) => String(housekeepingValue(task, "status", "current_status", "housekeeping_status") || "Pending").trim().toLowerCase();
+const housekeepingTasks = (response = {}) => listFrom(response?.data || response, ["tasks", "items", "housekeeping_tasks", "data"]);
+const housekeepingAction = (task) => {
+  const current = housekeepingStatus(task), room = housekeepingValue(task, "room_number", "room_no", "room", "number") || "room";
+  const actions = { pending: ["start", "▶ Start Cleaning"], cleaning: ["complete", "✔ Complete Cleaning"], completed: ["inspect", "🔍 Inspect Room"] };
+  if (!actions[current]) return '<button class="btn btn-small housekeeping-action" type="button" disabled aria-label="Room ready">✓ Ready</button>';
+  const [action, label] = actions[current];
+  return `<button class="btn btn-small housekeeping-action" type="button" data-housekeeping-action="${action}" aria-label="${escapeHtml(label.replace(/^[^A-Za-z]+/, ""))} for room ${escapeHtml(room)}">${label}</button>`;
+};
+const housekeepingTaskModel = (task) => ({
+  id: housekeepingValue(task, "uuid", "id", "task_id"), room: housekeepingValue(task, "room_number", "room_no", "room", "number"),
+  type: housekeepingValue(task, "task_type", "type") || "Room cleaning", current: housekeepingStatus(task),
+  created: housekeepingValue(task, "created_at", "createdAt", "created"), completed: housekeepingValue(task, "completed_at", "completedAt", "completed")
+});
+function renderHousekeepingTask(task, card = false) {
+  const model = housekeepingTaskModel(task), badge = status(model.current.charAt(0).toUpperCase() + model.current.slice(1)), action = housekeepingAction(task);
+  if (card) return `<article class="housekeeping-card" data-task-id="${escapeHtml(model.id)}"><div class="housekeeping-card-head"><strong>Room ${escapeHtml(model.room)}</strong>${badge}</div><dl><div><dt>Task Type</dt><dd>${escapeHtml(model.type)}</dd></div><div><dt>Created</dt><dd>${dateTime(model.created)}</dd></div><div><dt>Completed</dt><dd>${dateTime(model.completed)}</dd></div></dl>${action}</article>`;
+  return `<tr data-task-id="${escapeHtml(model.id)}"><td><strong>${escapeHtml(model.room)}</strong></td><td>${escapeHtml(model.type)}</td><td>${badge}</td><td>${dateTime(model.created)}</td><td>${dateTime(model.completed)}</td><td>${action}</td></tr>`;
+}
+const housekeepingSkeletonRows = () => Array.from({ length: 5 }, () => '<tr class="housekeeping-skeleton" aria-hidden="true"><td colspan="6"><span></span></td></tr>').join("");
+
+async function initHousekeeping() {
+  const form = $("[data-housekeeping-filters]"), rows = $("[data-housekeeping-rows]"), cards = $("[data-housekeeping-cards]");
+  const section = $("[data-housekeeping-section]"), errorNotice = $("[data-housekeeping-error]"), previous = $("[data-housekeeping-previous]"), next = $("[data-housekeeping-next]"), pageLabel = $("[data-housekeeping-page]");
+  const state = { page: 1, limit: 20, hasNext: false };
+  const setLoading = () => { section.setAttribute("aria-busy", "true"); errorNotice.hidden = true; rows.innerHTML = housekeepingSkeletonRows(); cards.innerHTML = '<div class="housekeeping-card-skeleton" aria-label="Loading housekeeping tasks"><span></span><span></span><span></span></div>'; previous.disabled = true; next.disabled = true; };
+  const load = async () => {
+    setLoading();
+    const params = new URLSearchParams({ page: String(state.page), limit: String(state.limit) });
+    new FormData(form).forEach((value, key) => { if (String(value).trim()) params.set(key, String(value).trim()); });
+    try {
+      const response = await AdminAuth.request(`/admin/housekeeping?${params}`), tasks = housekeepingTasks(response).slice().sort((a, b) => new Date(housekeepingValue(b, "created_at", "createdAt") || 0) - new Date(housekeepingValue(a, "created_at", "createdAt") || 0));
+      const pagination = response?.pagination || response?.data?.pagination || {};
+      state.page = Number(pagination.page ?? pagination.current_page ?? state.page) || 1;
+      const totalPages = Number(pagination.total_pages ?? pagination.pages), total = Number(pagination.total ?? pagination.total_items);
+      state.hasNext = pagination.has_next === true || (Number.isFinite(totalPages) ? state.page < totalPages : Number.isFinite(total) ? state.page * state.limit < total : tasks.length === state.limit);
+      rows.innerHTML = tasks.length ? tasks.map((task) => renderHousekeepingTask(task)).join("") : emptyRow(6, "No housekeeping tasks match your filters.");
+      cards.innerHTML = tasks.length ? tasks.map((task) => renderHousekeepingTask(task, true)).join("") : '<p class="empty">No housekeeping tasks match your filters.</p>';
+      pageLabel.textContent = `Page ${state.page}`; previous.disabled = state.page <= 1; next.disabled = !state.hasNext;
+    } catch (_) { rows.innerHTML = ""; cards.innerHTML = ""; errorNotice.hidden = false; }
+    finally { section.setAttribute("aria-busy", "false"); }
+  };
+  const act = async (button) => {
+    const container = button.closest("[data-task-id]"), action = button.dataset.housekeepingAction, taskId = container?.dataset.taskId;
+    const prompts = { start: "Start cleaning this room?", complete: "Mark cleaning as complete?", inspect: "Confirm that this room has passed inspection?" };
+    if (!taskId || !confirm(prompts[action])) return;
+    button.disabled = true;
+    try {
+      await AdminAuth.request(`/admin/housekeeping/${encodeURIComponent(taskId)}/${action}`, { method: "POST" });
+      const nextStatus = { start: "Cleaning", complete: "Completed", inspect: "Inspected" }[action];
+      document.querySelectorAll(`[data-task-id="${CSS.escape(taskId)}"]`).forEach((item) => { const badge = item.querySelector(".status"); if (badge) { badge.className = `status status-${nextStatus.toLowerCase()}`; badge.textContent = nextStatus; } });
+      await load(); const toast = $("[data-housekeeping-success]"); toast.textContent = `${nextStatus} status saved successfully.`; toast.hidden = false; window.setTimeout(() => { toast.hidden = true; }, 5000);
+    } catch (_) { errorNotice.querySelector("strong").textContent = "That task could not be updated."; errorNotice.querySelector("p").textContent = "No changes were made. Please try again."; errorNotice.hidden = false; button.disabled = false; }
+  };
+  section.addEventListener("click", (event) => { const button = event.target.closest("[data-housekeeping-action]"); if (button && !button.disabled) act(button); });
+  form.addEventListener("submit", (event) => { event.preventDefault(); state.page = 1; load(); });
+  $("[data-housekeeping-status]").addEventListener("change", () => { state.page = 1; load(); });
+  $("[data-housekeeping-refresh]").addEventListener("click", load); $("[data-housekeeping-retry]").addEventListener("click", load);
+  previous.addEventListener("click", () => { if (state.page > 1) { state.page--; load(); } }); next.addEventListener("click", () => { if (state.hasNext) { state.page++; load(); } });
+  await load();
+}
+
+if (typeof module !== "undefined") module.exports = { normalizeAssignment, renderAssignment, renderRooms, sameRoomType, housekeepingTasks, renderHousekeepingTask, housekeepingSkeletonRows };
 
 async function initReviews() {
   try {
@@ -323,5 +386,5 @@ async function initAvailability() {
 
 document.addEventListener("DOMContentLoaded", () => {
   if (document.body.dataset.page !== "login") AdminAuth.requireAuth();
-  ({ dashboard: initDashboard, bookings: initBookings, booking: initBooking, reviews: initReviews, availability: initAvailability })[document.body.dataset.page]?.();
+  ({ dashboard: initDashboard, bookings: initBookings, booking: initBooking, reviews: initReviews, availability: initAvailability, housekeeping: initHousekeeping })[document.body.dataset.page]?.();
 });

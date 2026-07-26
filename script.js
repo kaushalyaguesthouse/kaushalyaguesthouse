@@ -14,7 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initReviews();
   initRevealAnimations();
   document.getElementById("year").textContent = new Date().getFullYear();
-  if (window.emailjs) window.emailjs.init("XkkCrNFvEe1DQzBvG");
 });
 
 function initNavigation() {
@@ -131,6 +130,58 @@ function localDate(value) {
   return new Date(year, month - 1, day);
 }
 
+const BOOKING_SUBMISSION_KEY = "kgh-booking-submission";
+let isSubmitting = false;
+let bookingSubmission = loadBookingSubmission();
+
+function generateIdempotencyKey() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function loadBookingSubmission() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(BOOKING_SUBMISSION_KEY));
+    return stored && stored.key && stored.signature ? stored : null;
+  } catch {
+    sessionStorage.removeItem(BOOKING_SUBMISSION_KEY);
+    return null;
+  }
+}
+
+function getBookingIdempotencyKey(signature) {
+  if (!bookingSubmission || bookingSubmission.signature !== signature) {
+    bookingSubmission = { key: generateIdempotencyKey(), signature, ended: false };
+    sessionStorage.setItem(BOOKING_SUBMISSION_KEY, JSON.stringify(bookingSubmission));
+  }
+  return bookingSubmission.key;
+}
+
+function endBookingSubmission(success) {
+  if (success) {
+    bookingSubmission = null;
+    sessionStorage.removeItem(BOOKING_SUBMISSION_KEY);
+  } else if (bookingSubmission) {
+    bookingSubmission.ended = true;
+    sessionStorage.setItem(BOOKING_SUBMISSION_KEY, JSON.stringify(bookingSubmission));
+  }
+}
+
+async function parseBackendResponse(response, fallbackMessage) {
+  const contentType = response.headers.get("content-type") || "";
+  let data = null;
+  if (response.status !== 204) {
+    if (contentType.includes("application/json")) {
+      try { data = await response.json(); } catch { data = null; }
+    } else {
+      await response.text();
+    }
+  }
+  if (!response.ok) throw new Error(fallbackMessage);
+  return data || {};
+}
+
 function initBooking() {
   const form = document.getElementById("bookingForm");
   const checkin = document.getElementById("checkin");
@@ -168,10 +219,18 @@ function initBooking() {
   [checkout, room].forEach((field) => field.addEventListener("change", updatePrice));
   document.querySelectorAll('input[name="payment_method"]').forEach((input) => input.addEventListener("change", () => document.querySelector(".advance-row").hidden = input.value === "later" && input.checked));
   document.querySelectorAll(".choose-room").forEach((choose) => choose.addEventListener("click", () => { room.value = choose.dataset.room; updatePrice(); document.getElementById("booking").scrollIntoView({ behavior: "smooth" }); }));
+  form.addEventListener("input", () => {
+    if (bookingSubmission?.ended) {
+      bookingSubmission = null;
+      sessionStorage.removeItem(BOOKING_SUBMISSION_KEY);
+    }
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    message.textContent = "";
+    if (isSubmitting) return;
+    message.className = "form-message";
+    message.replaceChildren();
     const cost = totals();
     if (!form.checkValidity()) { form.reportValidity(); message.textContent = "Please complete all required fields correctly."; return; }
     if (!cost) { message.textContent = "Check-out must be at least one day after check-in."; checkout.focus(); return; }
@@ -179,102 +238,104 @@ function initBooking() {
     const data = {
       customer_name: document.getElementById("name").value.trim(), phone: document.getElementById("phone").value.replace(/[\s-]/g, ""), email: document.getElementById("email").value.trim(), room_type: room.value,
       check_in: checkin.value, check_out: checkout.value, adults: Number(document.getElementById("adults").value), children: Number(document.getElementById("children").value), amount: cost.total,
-      payment_type: paymentMethod === "advance" ? "Advance Payment" : "Pay Later", payment_status: "Pending", razorpay_payment_id: null, special_request: document.getElementById("request").value.trim()
+      payment_type: paymentMethod === "advance" ? "Razorpay" : "Pay Later", special_request: document.getElementById("request").value.trim()
     };
+    if (paymentMethod === "later") data.payment_status = "Pending";
+    const signature = JSON.stringify({ ...data, payment_method: paymentMethod });
+    const idempotencyKey = getBookingIdempotencyKey(signature);
+    isSubmitting = true;
     button.disabled = true;
     button.textContent = "Please wait…";
     try {
-      if (paymentMethod === "later") await createBooking(data, cost);
-      else await startOnlinePayment(data, cost);
+      if (paymentMethod === "later") {
+        await createBooking(data, cost, idempotencyKey);
+      } else {
+        await startOnlinePayment(data, cost, idempotencyKey);
+        return;
+      }
     } catch (error) {
       console.error(error);
       message.textContent = error.message || "We could not complete the booking. Please try again or call us.";
-      button.disabled = false;
-      button.textContent = "Confirm booking";
+    } finally {
+      if (paymentMethod === "later") resetBookingButton();
     }
   });
 }
 
-async function startOnlinePayment(data, cost) {
+async function startOnlinePayment(data, cost, idempotencyKey) {
   if (!window.Razorpay) throw new Error("The secure payment service is unavailable. Please choose pay at hotel or try again.");
   const response = await fetch(`${BACKEND_URL}/create-order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: cost.advance }) });
-  const order = await response.json();
-  if (!response.ok || !order.success) throw new Error(order.message || "Unable to start secure payment.");
-  const razorpay = new window.Razorpay({ key: order.key_id, amount: order.amount, currency: "INR", order_id: order.order_id, name: "Kaushalya Guest House", description: `30% advance for ${cost.nights}-night stay`, prefill: { name: data.customer_name, email: data.email, contact: data.phone }, theme: { color: "#102b28" }, handler: async (payment) => { data.payment_status = "Paid"; data.razorpay_payment_id = payment.razorpay_payment_id; await createBooking(data, cost); }, modal: { ondismiss: resetBookingButton } });
-  razorpay.on("payment.failed", () => { document.getElementById("bookingMessage").textContent = "Payment failed. No booking was created; please try again."; resetBookingButton(); });
+  const order = await parseBackendResponse(response, "Unable to start secure payment. Please try again.");
+  if (!order.success || !order.order_id) throw new Error("Unable to start secure payment. Please try again.");
+  const razorpay = new window.Razorpay({
+    key: order.key_id, amount: order.amount, currency: "INR", order_id: order.order_id, name: "Kaushalya Guest House", description: `30% advance for ${cost.nights}-night stay`, prefill: { name: data.customer_name, email: data.email, contact: data.phone }, theme: { color: "#102b28" },
+    handler: async (payment) => {
+      const message = document.getElementById("bookingMessage");
+      try {
+        await verifyRazorpayPayment(payment);
+        const bookingData = { ...data, razorpay_order_id: payment.razorpay_order_id, razorpay_payment_id: payment.razorpay_payment_id, razorpay_signature: payment.razorpay_signature };
+        await createBooking(bookingData, cost, idempotencyKey);
+      } catch (error) {
+        console.error(error);
+        if (error.bookingFinalizationFailed) {
+          message.className = "form-message";
+          message.textContent = `Payment was received, but booking confirmation is pending. Please contact support and provide Razorpay payment ID ${payment.razorpay_payment_id}. Do not make another payment.`;
+        } else {
+          message.className = "form-message";
+          message.textContent = error.message || "Payment verification failed. No booking was created. Please contact support before trying again.";
+        }
+      } finally {
+        resetBookingButton();
+      }
+    },
+    modal: { ondismiss: () => { endBookingSubmission(false); resetBookingButton(); } }
+  });
+  razorpay.on("payment.failed", () => { document.getElementById("bookingMessage").textContent = "Payment failed. No booking was created; please try again."; endBookingSubmission(false); resetBookingButton(); });
   razorpay.open();
 }
 
+async function verifyRazorpayPayment(paymentData) {
+  const response = await fetch(`${BACKEND_URL}/verify-payment`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ razorpay_order_id: paymentData.razorpay_order_id, razorpay_payment_id: paymentData.razorpay_payment_id, razorpay_signature: paymentData.razorpay_signature })
+  });
+  const result = await parseBackendResponse(response, "Payment verification failed. No booking was created. Please contact support before trying again.");
+  if (!result.success) throw new Error("Payment verification failed. No booking was created. Please contact support before trying again.");
+  return result;
+}
+
 function resetBookingButton() {
+  isSubmitting = false;
   const button = document.getElementById("bookingBtn");
   button.disabled = false;
   button.textContent = "Confirm booking";
 }
 
-async function createBooking(data, cost) {
-  const idempotencyKey =
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-  const response = await fetch(`${BACKEND_URL}/create-booking`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Idempotency-Key": idempotencyKey
-    },
-    body: JSON.stringify(data)
-  });
-
-  const result = await response.json();
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Booking could not be created.");
+async function createBooking(data, cost, idempotencyKey) {
+  const response = await fetch(`${BACKEND_URL}/create-booking`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body: JSON.stringify(data) });
+  let result;
+  try {
+    result = await parseBackendResponse(response, "Booking could not be created. Please try again or contact support.");
+    if (!result.success || !result.booking_id) throw new Error("Booking could not be created. Please try again or contact support.");
+  } catch (error) {
+    if (data.razorpay_payment_id) error.bookingFinalizationFailed = true;
+    throw error;
   }
 
-  if (window.emailjs) {
-    window.emailjs
-      .send("service_k4u106n", "template_gmf6drc", {
-        customer_name: data.customer_name,
-        customer_email: data.email,
-        booking_id: result.booking_id,
-        room_type: data.room_type,
-        check_in: data.check_in,
-        check_out: data.check_out,
-        payment_type: data.payment_type,
-        amount: data.amount
-      })
-      .catch((error) =>
-        console.warn("Confirmation email could not be sent", error)
-      );
-  }
-
-  const whatsapp =
-    `🏨 Kaushalya Guest House\n\n` +
-    `Booking ID: ${result.booking_id}\n` +
-    `Guest: ${data.customer_name}\n` +
-    `Phone: ${data.phone}\n` +
-    `Email: ${data.email}\n` +
-    `Room: ${data.room_type}\n` +
-    `Guests: ${data.adults} adult(s), ${data.children} child(ren)\n` +
-    `Check-in: ${data.check_in}\n` +
-    `Check-out: ${data.check_out}\n` +
-    `Nights: ${cost.nights}\n` +
-    `Payment: ${data.payment_type}\n` +
-    `Status: ${data.payment_status}\n` +
-    `Total: ₹${data.amount}\n` +
-    `Special request: ${data.special_request || "None"}`;
-
-  document.getElementById("bookingMessage").classList.add("success");
-  document.getElementById("bookingMessage").textContent =
-    `Booking ${result.booking_id} confirmed. Opening WhatsApp…`;
-
+  const whatsapp = `🏨 Kaushalya Guest House\n\nBooking ID: ${result.booking_id}\nGuest: ${data.customer_name}\nPhone: ${data.phone}\nEmail: ${data.email}\nRoom: ${data.room_type}\nGuests: ${data.adults} adult(s), ${data.children} child(ren)\nCheck-in: ${data.check_in}\nCheck-out: ${data.check_out}\nNights: ${cost.nights}\nPayment: ${data.payment_type}\nTotal: ₹${data.amount}\nSpecial request: ${data.special_request || "None"}`;
+  const message = document.getElementById("bookingMessage");
+  const whatsappLink = document.createElement("a");
+  whatsappLink.href = `https://wa.me/916205416451?text=${encodeURIComponent(whatsapp)}`;
+  whatsappLink.target = "_blank";
+  whatsappLink.rel = "noopener";
+  whatsappLink.textContent = "Continue on WhatsApp (optional)";
+  message.className = "form-message success";
+  message.replaceChildren(document.createTextNode(`Booking ${result.booking_id} confirmed. `), whatsappLink);
+  endBookingSubmission(true);
   document.getElementById("bookingForm").reset();
-  resetBookingButton();
-
-  window.location.href =
-    `https://wa.me/916205416451?text=${encodeURIComponent(whatsapp)}`;
 }
+
+let isReviewSubmitting = false;
 
 function initReviews() {
   const form = document.getElementById("reviewForm");
@@ -282,32 +343,76 @@ function initReviews() {
   const stars = [...document.querySelectorAll("#starRating button")];
   const message = document.getElementById("reviewFormMessage");
   const text = document.getElementById("reviewText");
+  const button = document.getElementById("reviewSubmitBtn");
   const setRating = (value) => {
-    rating.value = value;
-    stars.forEach((star) => { const selected = Number(star.dataset.rating) <= value; star.classList.toggle("active", selected); star.setAttribute("aria-checked", String(Number(star.dataset.rating) === value)); });
-    document.getElementById("ratingMessage").textContent = `${value} star${value === 1 ? "" : "s"} selected.`;
+    const safeValue = Math.max(0, Math.min(5, Number(value) || 0));
+    rating.value = safeValue || "";
+    stars.forEach((star) => { const selected = Number(star.dataset.rating) <= safeValue; star.classList.toggle("active", selected); star.setAttribute("aria-checked", String(Number(star.dataset.rating) === safeValue)); });
+    document.getElementById("ratingMessage").textContent = safeValue ? `${safeValue} star${safeValue === 1 ? "" : "s"} selected.` : "Select 1 to 5 stars.";
   };
   stars.forEach((star) => { star.addEventListener("click", () => setRating(Number(star.dataset.rating))); star.addEventListener("keydown", (event) => { const current = Number(rating.value) || 1; if (event.key === "ArrowRight" || event.key === "ArrowUp") { event.preventDefault(); setRating(Math.min(5, current + 1)); } if (event.key === "ArrowLeft" || event.key === "ArrowDown") { event.preventDefault(); setRating(Math.max(1, current - 1)); } }); });
   text.addEventListener("input", () => document.getElementById("reviewCharacterCount").textContent = text.value.length);
-  form.addEventListener("submit", (event) => {
-    event.preventDefault(); message.className = "form-message";
+  loadReviews();
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (isReviewSubmitting) return;
+    message.className = "form-message";
+    const payload = { customer_name: document.getElementById("reviewName").value.trim(), customer_email: document.getElementById("reviewEmail").value.trim(), rating: Number(rating.value), review: text.value.trim() };
+    if (payload.customer_name.length < 2) { message.textContent = "Please enter a name with at least 2 characters."; return; }
     if (!rating.value) { message.textContent = "Please choose a star rating."; stars[0].focus(); return; }
-    if (!form.checkValidity()) { form.reportValidity(); message.textContent = "Please complete every review field correctly."; return; }
-    const review = { name: document.getElementById("reviewName").value.trim(), rating: Number(rating.value), text: text.value.trim() };
-    renderReview(review);
-    form.reset(); setRating(0); document.getElementById("reviewCharacterCount").textContent = "0";
-    message.className = "form-message success"; message.textContent = "Thank you! Your review has been added to this page.";
+    if (!form.checkValidity() || payload.review.length < 10) { form.reportValidity(); message.textContent = "Please complete every review field correctly."; return; }
+    isReviewSubmitting = true;
+    button.disabled = true;
+    button.textContent = "Submitting…";
+    try {
+      const response = await fetch(`${BACKEND_URL}/create-review`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const result = await parseBackendResponse(response, "Your review could not be submitted. Please try again.");
+      if (result.success === false) throw new Error("Your review could not be submitted. Please try again.");
+      form.reset(); setRating(0); document.getElementById("reviewCharacterCount").textContent = "0";
+      message.className = "form-message success";
+      message.textContent = "Thank you. Your review was submitted for moderation and will appear after approval.";
+    } catch (error) {
+      console.error(error);
+      message.textContent = error.message || "Your review could not be submitted. Please try again.";
+    } finally {
+      isReviewSubmitting = false;
+      button.disabled = false;
+      button.textContent = "Submit review";
+    }
   });
 }
 
+async function loadReviews() {
+  const container = document.getElementById("reviewsContainer");
+  try {
+    const response = await fetch(`${BACKEND_URL}/reviews`);
+    const result = await parseBackendResponse(response, "Guest reviews are temporarily unavailable.");
+    const reviews = Array.isArray(result) ? result : (Array.isArray(result.reviews) ? result.reviews : []);
+    container.replaceChildren();
+    if (!reviews.length) {
+      const empty = document.createElement("p");
+      empty.textContent = "No guest reviews have been published yet.";
+      container.append(empty);
+      return;
+    }
+    reviews.forEach(renderReview);
+  } catch (error) {
+    console.error(error);
+    const unavailable = document.createElement("p");
+    unavailable.textContent = "Guest reviews are temporarily unavailable.";
+    container.replaceChildren(unavailable);
+  }
+}
+
 function renderReview(review) {
+  const rating = Math.max(1, Math.min(5, Math.round(Number(review.rating) || 1)));
   const article = document.createElement("article");
   article.className = "testimonial";
-  const stars = document.createElement("div"); stars.className = "stars"; stars.setAttribute("aria-label", `${review.rating} out of 5 stars`); stars.textContent = "★".repeat(review.rating) + "☆".repeat(5 - review.rating);
-  const quote = document.createElement("blockquote"); quote.textContent = `“${review.text}”`;
-  const byline = document.createElement("p"); byline.textContent = `— ${review.name}`;
+  const stars = document.createElement("div"); stars.className = "stars"; stars.setAttribute("aria-label", `${rating} out of 5 stars`); stars.textContent = "★".repeat(rating) + "☆".repeat(5 - rating);
+  const quote = document.createElement("blockquote"); quote.textContent = `“${String(review.review ?? review.text ?? "")}”`;
+  const byline = document.createElement("p"); byline.textContent = `— ${String(review.customer_name ?? review.name ?? "Guest")}`;
   article.append(stars, quote, byline);
-  document.getElementById("reviewsContainer").prepend(article);
+  document.getElementById("reviewsContainer").append(article);
 }
 
 function initRevealAnimations() {

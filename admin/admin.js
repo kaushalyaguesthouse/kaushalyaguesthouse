@@ -44,12 +44,10 @@ async function initDashboard() {
       const summary = data.summary ?? {};
       const revenue = data.revenue_totals ?? {};
       const trends = data.trends || data.charts || {};
-      let trend = array(data, "daily_trend", "trend", "daily");
-      if (!trend.length) trend = array(trends, "daily_trend", "default_30_day_trend", "daily");
-      const roomBookings = value(data, "bookings_by_room_type", "room_type_bookings") || value(trends, "bookings_by_room_type", "room_type_bookings") || [];
+      let trend = Array.isArray(data.daily_trends) ? data.daily_trends : [];
+      const roomBookings = Object.entries(data.room_type_performance ?? {}).map(([room_type, metrics]) => ({ room_type, ...metrics }));
       const statuses = data.booking_status_totals ?? {};
-      const occupancyValue = data.occupancy ?? [];
-      const occupancy = Array.isArray(occupancyValue) ? occupancyValue : array(occupancyValue, "by_room_type", "room_types", "items");
+      const occupancy = Object.entries(data.occupancy?.by_room_type ?? {}).map(([room_type, metrics]) => ({ room_type, ...metrics }));
       const payments = data.payment_statistics ?? {};
       console.log("Admin analytics raw response:", response);
       console.log("Admin analytics resolved object:", data);
@@ -88,11 +86,11 @@ async function initDashboard() {
       ]);
       renderChart("[data-bookings-chart]", "[data-bookings-chart-empty]", "bar", dates, [{ label: "Bookings", data: trend.map((item) => number(value(item, "booking_count", "bookings"))), backgroundColor: "#4c9a78" }]);
       const normalizeDistribution = (items) => Array.isArray(items) ? items : Object.entries(items || {}).map(([label, count]) => ({ label, count }));
-      const roomData = normalizeDistribution(roomBookings), statusData = normalizeDistribution(statuses);
+      const roomData = roomBookings, statusData = normalizeDistribution(statuses);
       const palette = ["#174d3a", "#c99b54", "#4c9a78", "#74877e", "#d17a5b", "#725a8d"];
-      renderChart("[data-room-chart]", "[data-room-chart-empty]", "doughnut", roomData.map((item) => value(item, "room_type", "label", "name")), [{ label: "Bookings", data: roomData.map((item) => number(value(item, "booking_count", "count", "value"))), backgroundColor: palette }]);
-      renderChart("[data-status-chart]", "[data-status-chart-empty]", "doughnut", statusData.map((item) => value(item, "status", "booking_status", "label", "name")), [{ label: "Bookings", data: statusData.map((item) => number(value(item, "booking_count", "count", "value"))), backgroundColor: palette }]);
-      $("[data-occupancy-rows]").innerHTML = occupancy.length ? occupancy.map((item) => `<tr><td><strong>${escapeHtml(value(item, "room_type", "name"))}</strong></td><td>${formatCount(value(item, "occupied_rooms", "occupied"))}</td><td>${formatCount(value(item, "blocked_rooms", "blocked"))}</td><td>${formatCount(value(item, "available_rooms", "available"))}</td><td>${formatCount(value(item, "total_rooms", "total"))}</td><td><strong>${percent(value(item, "occupancy_percentage", "occupancy_percent"))}</strong></td></tr>`).join("") : emptyRow(6, "No occupancy data available.");
+      renderChart("[data-room-chart]", "[data-room-chart-empty]", "doughnut", roomData.map((item) => item.room_type), [{ label: "Bookings", data: roomData.map((item) => number(item.bookings)), backgroundColor: palette }]);
+      renderChart("[data-status-chart]", "[data-status-chart-empty]", "doughnut", statusData.map((item) => item.label), [{ label: "Bookings", data: statusData.map((item) => number(item.count)), backgroundColor: palette }]);
+      $("[data-occupancy-rows]").innerHTML = occupancy.length ? occupancy.map((item) => `<tr><td><strong>${escapeHtml(item.room_type)}</strong></td><td>${formatCount(item.occupied)}</td><td>${formatCount(item.blocked)}</td><td>${formatCount(item.available)}</td><td>${formatCount(item.inventory)}</td><td><strong>${percent(item.occupancy_rate)}</strong></td></tr>`).join("") : emptyRow(6, "No occupancy data available.");
       $("[data-payment-cards]").innerHTML = [
         ["Verified online amount", value(payments, "verified_online_amount", "verified_online_collections")], ["Expected pay-at-hotel amount", value(payments, "expected_pay_at_hotel_amount", "pay_at_hotel_expected")],
         ["Pending payment amount", value(payments, "pending_payment_amount", "pending_amount")], ["Completed bookings with unrecorded balance", value(payments, "completed_bookings_with_unrecorded_balance", "unrecorded_balance")]

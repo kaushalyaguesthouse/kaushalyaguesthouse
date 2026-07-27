@@ -9,7 +9,7 @@ const money = (value) => value == null ? "—" : new Intl.NumberFormat("en-IN", 
 const status = (value) => `<span class="status status-${String(value || "unknown").toLowerCase().replace(/\s+/g, "-")}">${escapeHtml(value)}</span>`;
 const get = (item, ...keys) => keys.map((key) => item?.[key]).find((value) => value !== undefined && value !== null);
 const showError = (error) => { const el = $("[data-error]"); if (el) { el.textContent = error.message; el.hidden = false; } };
-const analyticsFromResponse = (response) => response?.analytics || response?.data?.analytics || response?.data || response?.summary || response || {};
+const analyticsFromResponse = (response) => response?.analytics ?? response ?? {};
 
 function bookingRows(bookings) {
   return bookings.map((b) => {
@@ -41,25 +41,29 @@ async function initDashboard() {
     try {
       const response = await AdminAuth.request("/admin/analytics/summary");
       const data = analyticsFromResponse(response);
-      const overview = data.overview || data.snapshot || data.metrics || {};
-      const revenue = data.revenue_summary || data.revenue || {};
+      const summary = data.summary ?? {};
+      const revenue = data.revenue_totals ?? {};
       const trends = data.trends || data.charts || {};
       let trend = array(data, "daily_trend", "trend", "daily");
       if (!trend.length) trend = array(trends, "daily_trend", "default_30_day_trend", "daily");
       const roomBookings = value(data, "bookings_by_room_type", "room_type_bookings") || value(trends, "bookings_by_room_type", "room_type_bookings") || [];
-      const statuses = value(data, "booking_status_distribution", "bookings_by_status", "status_distribution") || value(trends, "booking_status_distribution", "bookings_by_status") || [];
-      const occupancy = array(data, "occupancy_by_room_type", "room_type_occupancy");
-      const payments = data.payment_statistics || data.payments || {};
-      const hasAnalytics = Object.keys(overview).length || Object.keys(revenue).length || Object.keys(trends).length || trend.length || Object.keys(roomBookings).length || Object.keys(statuses).length || occupancy.length || Object.keys(payments).length;
+      const statuses = data.booking_status_totals ?? {};
+      const occupancyValue = data.occupancy ?? [];
+      const occupancy = Array.isArray(occupancyValue) ? occupancyValue : array(occupancyValue, "by_room_type", "room_types", "items");
+      const payments = data.payment_statistics ?? {};
+      console.log("Admin analytics raw response:", response);
+      console.log("Admin analytics resolved object:", data);
+      console.log("Admin analytics resolved today_bookings:", summary.today_bookings);
+      console.log("Admin analytics resolved gross_booked_value:", revenue.today?.gross_booked_value);
+      const hasAnalytics = Object.keys(summary).length || Object.keys(revenue).length || Object.keys(trends).length || trend.length || Object.keys(roomBookings).length || Object.keys(statuses).length || occupancy.length || Object.keys(payments).length;
       $("[data-generated-at]").textContent = dateTime(value(data, "generated_at", "generatedAt", "last_generated_at"));
       $("[data-timezone]").textContent = escapeHtml(value(data, "timezone", "effective_timezone") || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (!hasAnalytics) { empty.hidden = false; return; }
       $("[data-overview-cards]").innerHTML = [
-        ["Today’s bookings", value(overview, "todays_bookings", "today_bookings", "bookings_today")],
-        ["Verified online collections today", value(overview, "verified_online_collections_today", "online_collections_today"), money],
-        ["Current guests", value(overview, "current_guests", "guests_in_house")], ["Rooms occupied", value(overview, "rooms_occupied", "occupied_rooms")],
-        ["Available rooms", value(overview, "available_rooms", "rooms_available")], ["Occupancy percentage", value(overview, "occupancy_percentage", "occupancy_percent"), percent],
-        ["Gross booked value this month", value(overview, "gross_booked_value_this_month", "monthly_gross_booked_value"), money]
+        ["Today’s bookings", summary.today_bookings],
+        ["Current guests", summary.current_guests],
+        ["Rooms", summary.rooms],
+        ["Gross booked value today", revenue.today?.gross_booked_value, money]
       ].map(([label, raw, formatter]) => metricCard(label, raw, formatter)).join("");
       const periods = ["today", "current_week", "current_month", "current_year"];
       $("[data-revenue-cards]").innerHTML = periods.map((key) => {

@@ -23,6 +23,15 @@ test("admin routes follow the deployed contract inventory", () => {
   for (const route of ["/admin/login", "/admin/analytics/summary", "/admin/bookings", "/assignment", "/assign-room", "/admin/rooms/status", "/admin/availability", "/admin/housekeeping", "/admin/reviews", "/admin/invoices", "/admin/analytics/${type}", "/admin/exports/", "/admin/settings/business"]) assert.ok(source.includes(route), route);
   assert.doesNotMatch(modules, /\bfetch\s*\(/, "page modules must use AdminAuth.request");
 });
+test("analytics dashboard accepts nested analytics payloads without dropping zero values", () => {
+  const context = { document: { addEventListener() {}, querySelector() { return null; } }, window: {}, AdminAuth: {}, console, Intl, Date, Number, Object, String, URLSearchParams, FormData, Map };
+  vm.createContext(context); vm.runInContext(read("admin/admin.js"), context);
+  const result = vm.runInContext("analyticsFromResponse({ generated_at: '2026-07-27T00:00:00Z', analytics: { overview: { todays_bookings: 0, rooms_occupied: 0 } } })", context);
+  assert.equal(result.overview.todays_bookings, 0);
+  assert.equal(result.overview.rooms_occupied, 0);
+  assert.equal(vm.runInContext("Object.keys(analyticsFromResponse({ analytics: { overview: { todays_bookings: 0 } } }).overview).length > 0", context), true);
+  assert.match(read("admin/dashboard.html"), /admin\.js\?v=20260727/);
+});
 test("unauthorized requests clear the tab session and redirect under the current Pages folder", async () => {
   const removed = [], redirects = [];
   const response = { status: 403, ok: false, async text() { return JSON.stringify({ message: "private" }); } };

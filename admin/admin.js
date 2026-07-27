@@ -9,6 +9,7 @@ const money = (value) => value == null ? "—" : new Intl.NumberFormat("en-IN", 
 const status = (value) => `<span class="status status-${String(value || "unknown").toLowerCase().replace(/\s+/g, "-")}">${escapeHtml(value)}</span>`;
 const get = (item, ...keys) => keys.map((key) => item?.[key]).find((value) => value !== undefined && value !== null);
 const showError = (error) => { const el = $("[data-error]"); if (el) { el.textContent = error.message; el.hidden = false; } };
+const analyticsFromResponse = (response) => response?.analytics || response?.data?.analytics || response?.data || response?.summary || response || {};
 
 function bookingRows(bookings) {
   return bookings.map((b) => {
@@ -39,7 +40,7 @@ async function initDashboard() {
     charts.splice(0).forEach((chart) => chart.destroy());
     try {
       const response = await AdminAuth.request("/admin/analytics/summary");
-      const data = response?.data || response?.summary || response || {};
+      const data = analyticsFromResponse(response);
       const overview = data.overview || data.snapshot || data.metrics || {};
       const revenue = data.revenue_summary || data.revenue || {};
       const trends = data.trends || data.charts || {};

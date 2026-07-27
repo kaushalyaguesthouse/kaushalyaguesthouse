@@ -31,6 +31,15 @@ test("create-order accepts current flat and reconciled nested API response shape
   assert.deepEqual({ ...core.normalizeOrderResponse({ success: true, key: "rzp_live_public", order: { id: "order_2", amount: 45000, currency: "INR" } }) }, { success: true, orderId: "order_2", keyId: "rzp_live_public", amount: 45000, currency: "INR" });
 });
 
+test("successful bookings target the WhatsApp app on mobile and WhatsApp Web on desktop", () => {
+  context.navigator.userAgent = "Mozilla/5.0 (Linux; Android 15; Mobile)";
+  assert.equal(core.getWhatsAppBookingUrl("Booking KGH-1 confirmed"), "https://wa.me/916205416451?text=Booking%20KGH-1%20confirmed");
+  context.navigator.userAgent = "Mozilla/5.0 (X11; Linux x86_64)";
+  assert.equal(core.getWhatsAppBookingUrl("Booking KGH-1 confirmed"), "https://web.whatsapp.com/send?phone=916205416451&text=Booking%20KGH-1%20confirmed");
+  assert.match(source, /window\.open\(whatsappUrl, "_blank", "noopener,noreferrer"\)/);
+  assert.match(source, /message\.replaceChildren[\s\S]*whatsappLink[\s\S]*window\.open\(whatsappUrl/);
+});
+
 test("every booking failure and Razorpay close/failure path is recoverable", () => {
   assert.match(source, /paymentMethod === "later" \|\| !checkoutOpened\) resetBookingButton/);
   assert.match(source, /ondismiss: \(\) => \{[^}]*Payment cancelled[^}]*resetBookingButton/s);

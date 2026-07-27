@@ -363,6 +363,14 @@ function resetBookingButton() {
   button.textContent = "Confirm booking";
 }
 
+function getWhatsAppBookingUrl(message) {
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const text = encodeURIComponent(message);
+  return isMobile
+    ? `https://wa.me/916205416451?text=${text}`
+    : `https://web.whatsapp.com/send?phone=916205416451&text=${text}`;
+}
+
 async function createBooking(data, cost, idempotencyKey) {
   const response = await apiFetch("/create-booking", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body: JSON.stringify(data) });
   let result;
@@ -377,16 +385,18 @@ async function createBooking(data, cost, idempotencyKey) {
   }
 
   const whatsapp = `🏨 Kaushalya Guest House\n\nBooking ID: ${result.booking_id}\nGuest: ${data.customer_name}\nPhone: ${data.phone}\nEmail: ${data.email}\nRoom: ${data.room_type}\nGuests: ${data.adults} adult(s), ${data.children} child(ren)\nCheck-in: ${data.check_in}\nCheck-out: ${data.check_out}\nNights: ${cost.nights}\nPayment: ${data.payment_type}\nTotal: ₹${data.amount}\nSpecial request: ${data.special_request || "None"}`;
+  const whatsappUrl = getWhatsAppBookingUrl(whatsapp);
   const message = document.getElementById("bookingMessage");
   const whatsappLink = document.createElement("a");
-  whatsappLink.href = `https://wa.me/916205416451?text=${encodeURIComponent(whatsapp)}`;
+  whatsappLink.href = whatsappUrl;
   whatsappLink.target = "_blank";
-  whatsappLink.rel = "noopener";
+  whatsappLink.rel = "noopener noreferrer";
   whatsappLink.textContent = "Continue on WhatsApp (optional)";
   message.className = "form-message success";
   message.replaceChildren(document.createTextNode(`Booking ${result.booking_id} confirmed. `), whatsappLink);
   endBookingSubmission(true);
   document.getElementById("bookingForm").reset();
+  window.open(whatsappUrl, "_blank", "noopener,noreferrer");
 }
 
 let isReviewSubmitting = false;
@@ -477,4 +487,4 @@ function initRevealAnimations() {
 }
 
 // Small, side-effect-free surface used by the production regression suite.
-window.KGH_TEST = Object.freeze({ calculateBookingTotals, normalizeOrderResponse });
+window.KGH_TEST = Object.freeze({ calculateBookingTotals, normalizeOrderResponse, getWhatsAppBookingUrl });
